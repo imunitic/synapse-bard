@@ -8,19 +8,22 @@
     // implications.
     .fingerprint = 0x351ee54619ebcc42,
 
-    // Pinned to the same version the root package requires, since the path
-    // dependency below shares its build with this one -- see the root
-    // `build.zig.zon`'s own comment for why it's pinned rather than tracking
+    // Pinned to the same version synapse itself requires -- see synapse's own
+    // `build.zig.zon` comment for why it's pinned rather than tracking
     // latest.
     .minimum_zig_version = "0.16.0",
 
     .dependencies = .{
-        // A path dependency, not a fetched one: bard reuses the repo root's
-        // `model`/`ports`/`core`/`adapters` modules directly from this
-        // checkout, with no hash to pin and no network fetch. `bard/build.zig`
-        // never requests the root's `treesitter` module, so libtree-sitter and
-        // the C toolchain it needs never enter this build.
-        .synapse = .{ .path = ".." },
+        // Pinned to a tagged synapse release, the way `tree_sitter`/`zeit`
+        // are pinned in synapse's own `build.zig.zon`. This supplies the
+        // `model`/`ports`/`core`/`adapters` modules; `build.zig` never
+        // requests `treesitter`, so libtree-sitter and the C toolchain it
+        // needs never enter this build. Bumping this is a deliberate step
+        // tied to a real synapse release, never an arbitrary commit.
+        .synapse = .{
+            .url = "https://github.com/imunitic/synapse/archive/refs/tags/v0.13.9.tar.gz",
+            .hash = "synapse-0.1.0-AUmHlSQyKwBpcpt9X8KuZwrdHsE62xqPB_HztcRZLah1",
+        },
     },
 
     .paths = .{

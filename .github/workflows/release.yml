@@ -1,20 +1,16 @@
-name: bard-release
+name: release
 
-# A bard release is cut by pushing a `bard-vX.Y.Z` tag, kept in its own
-# namespace so it can never collide with or cross-trigger release.yml's own
-# `v*`-tagged synapse release (`bard-v1.0.0` doesn't start with `v`). Bard
-# keeps its own release cadence, independent of synapse's, rather than
-# folding into that lock-step publish. workflow_dispatch takes an explicit
-# `tag` input for a manual re-run and checks out that tag rather than
-# whatever ref triggered the dispatch, so a manual run can never
+# A release is cut by pushing a `vX.Y.Z` tag. workflow_dispatch takes an
+# explicit `tag` input for a manual re-run and checks out that tag rather
+# than whatever ref triggered the dispatch, so a manual run can never
 # accidentally build off an untagged commit.
 on:
   push:
-    tags: ["bard-v*"]
+    tags: ["v*"]
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (must already exist, e.g. bard-v0.1.0)"
+        description: "Tag to release (must already exist, e.g. v0.1.0)"
         required: true
 
 permissions:
@@ -29,11 +25,8 @@ jobs:
   release:
     runs-on: ubuntu-latest
 
-    # Same reasoning as release.yml's own concurrency group, scoped to
-    # bard's own tag namespace so a synapse release and a bard release
-    # queued at the same time don't block each other.
     concurrency:
-      group: bard-release-tag
+      group: release-tag
       cancel-in-progress: false
 
     steps:
@@ -42,8 +35,9 @@ jobs:
           ref: ${{ github.event.inputs.tag || github.ref_name }}
 
       # No version pinned here -- resolved from build.zig.zon's
-      # minimum_zig_version, same reasoning as tests.yml/release.yml.
-      # cache-size-limit raised the same way too.
+      # minimum_zig_version, so the pin lives in exactly one place.
+      # cache-size-limit raised for the same reason synapse's own tests.yml
+      # raises it.
       - uses: mlugg/setup-zig@v2
         with:
           cache-size-limit: 4096
@@ -52,17 +46,11 @@ jobs:
         id: tag
         run: echo "tag=${{ github.event.inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
 
-      # Same targets ci/release-targets.sh gives synapse's own release.yml.
-      # `bard/` is its own build tree (a path dependency on this checkout's
-      # root), so this compiles only synapse-bard's two binaries -- none of
-      # synapse's own treesitter-linked ones. `-p "../out/$t"` writes back
-      # out to the repo root so the publish step below finds them at the
-      # same `out/$t/bin/...` path it always has.
       - name: Cross-compile each target
         run: |
           source ci/release-targets.sh
           for t in "${targets[@]}"; do
-            (cd bard && zig build -Dtarget="$t" -Doptimize=ReleaseSafe -p "../out/$t")
+            zig build -Dtarget="$t" -Doptimize=ReleaseSafe -p "out/$t"
           done
 
       - uses: actions/setup-node@v4
@@ -70,25 +58,21 @@ jobs:
           node-version: 24
           registry-url: "https://registry.npmjs.org"
 
-      # Same Node/npm bump release.yml's own job makes -- Trusted Publishing
-      # needs a recent npm CLI, same reasoning as that file's own comment.
+      # Trusted Publishing needs a recent npm CLI.
       - name: Upgrade npm for OIDC trusted-publishing support
         run: npm install -g npm@latest
 
       # No NODE_AUTH_TOKEN -- OIDC trusted publishing (id-token: write
       # above, plus each package's Trusted Publisher configured on
       # npmjs.com to trust this exact workflow file) is what authenticates
-      # instead, same shape release.yml already uses for synapse. npm
-      # detects the GitHub Actions OIDC environment automatically; nothing
-      # here has to request or pass a token by hand.
+      # instead. npm detects the GitHub Actions OIDC environment
+      # automatically; nothing here has to request or pass a token by hand.
       - name: Publish npm packages in lock-step
         run: |
           source ci/release-targets.sh
           v="${{ steps.tag.outputs.tag }}"
-          v="${v#bard-v}"
+          v="${v#v}"
 
-          # Same prerelease dist-tag derivation as release.yml's own publish
-          # step -- see that file's comment for the reasoning.
           dist_tag="latest"
           case "$v" in
             *-*)
@@ -97,8 +81,6 @@ jobs:
               ;;
           esac
 
-          # Same Zig-triple-to-npm-platform mapping as release.yml's own
-          # publish step -- see that file's comment for the reasoning.
           npm_platform_for() {
             case "$1" in
               x86_64-linux) echo linux-x64 ;;
@@ -111,8 +93,8 @@ jobs:
             esac
           }
 
-          # Same re-run safety as release.yml's own publish step -- see that
-          # file's comment for the reasoning.
+          # Re-run safety: a re-dispatch of an already-published tag skips
+          # republishing instead of failing on npm's immutable-version rule.
           publish_if_new() {
             local dir="$1" name="$2"
             if npm view "$name@$v" version >/dev/null 2>&1; then
