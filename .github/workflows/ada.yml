@@ -1,0 +1,39 @@
+name: ada
+
+# The Ada rewrite's crate, built and tested beside the Zig tree. Needs no
+# secrets; the Synapse library is fetched through the git pin in ada/alire.toml.
+on:
+  push:
+    branches: [main, ada-rewrite]
+    paths: ["ada/**", ".github/workflows/ada.yml"]
+  pull_request:
+    paths: ["ada/**", ".github/workflows/ada.yml"]
+  workflow_dispatch:
+
+jobs:
+  unit:
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-15, not macos-latest: the macOS 26 image's SDK lists an architecture
+        # that the linker of the GNAT toolchain rejects.
+        os: [ubuntu-latest, macos-15]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: ada
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # Installs Alire and its default toolchain (gnat_native, gprbuild); the
+      # crates' dependencies (AUnit, the Synapse library) are fetched on first build.
+      - uses: alire-project/setup-alire@v6
+
+      - uses: extractions/setup-just@v4
+
+      - name: Build
+        run: just build
+
+      - name: AUnit tests
+        run: just test

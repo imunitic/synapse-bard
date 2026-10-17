@@ -1,0 +1,25 @@
+# Task runner for the Ada crate. Every recipe runs in this directory, so the
+# directory can move without the recipes changing.
+#
+#   just              list the recipes
+#   just check        build and test -- before pushing
+
+set shell := ["bash", "-uc"]
+
+_default:
+    @just --list --unsorted
+
+# Alire builds a dependency in the release profile whatever the root's
+# profile; the validation profile makes the library's contracts run too.
+profile := "--profiles='*=validation'"
+
+# Build the executables.
+build:
+    alr -n build {{profile}}
+
+# Build and run the AUnit suite.
+test:
+    cd tests/unit && alr -n build {{profile}} && ./bin/synapse_bard_tests
+
+# The gate: build and test.
+check: build test

@@ -16,3 +16,13 @@ zig-pkg/
 # Personal, machine-local Claude Code instructions -- never shared, never
 # committed by anyone else working in this repo.
 CLAUDE.local.md
+# The Ada crate's build output: compiled objects, executables, Alire's cache
+# and the generated config project.
+/ada/obj/
+/ada/bin/
+/ada/alire/
+/ada/config/
+/ada/tests/unit/obj/
+/ada/tests/unit/bin/
+/ada/tests/unit/alire/
+/ada/tests/unit/config/
