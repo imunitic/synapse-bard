@@ -1,32 +1,22 @@
 .DS_Store
-zig-out/
-.zig-cache/
-# Scratch cross-compile output -- release.yml's own per-target build dir
-# (out/$target/bin/...), also used locally when testing a release by hand.
-out/
 # The compiled synapse-bard/synapse-bard-hook binaries the platform packages
-# ship -- release.yml's own publish step copies them in fresh from out/ at
-# publish time (or a local hand-test does the same); never checked into
-# source.
+# ship -- release.yml's own publish step copies them in fresh at publish time
+# (or a local hand-test does the same); never checked into source.
 packages/synapse-bard/platforms/*/bin/
-# Where zig 0.16 unpacks fetched dependencies -- the global cache under
-# ~/.cache/zig/p holds only the tarballs. Build output, not vendored source:
-# `zig build --fetch` refills it from the hash pinned in build.zig.zon.
-zig-pkg/
 # Personal, machine-local Claude Code instructions -- never shared, never
 # committed by anyone else working in this repo.
 CLAUDE.local.md
 # The Ada crate's build output: compiled objects, executables, Alire's cache
 # and the generated config project.
-/ada/obj/
-/ada/bin/
-/ada/alire/
-/ada/config/
-/ada/tests/unit/obj/
-/ada/tests/unit/bin/
-/ada/tests/unit/alire/
-/ada/tests/unit/config/
-/ada/tests/acceptance/obj/
-/ada/tests/acceptance/bin/
-/ada/tests/acceptance/alire/
-/ada/tests/acceptance/config/
+/obj/
+/bin/
+/alire/
+/config/
+/tests/unit/obj/
+/tests/unit/bin/
+/tests/unit/alire/
+/tests/unit/config/
+/tests/acceptance/obj/
+/tests/acceptance/bin/
+/tests/acceptance/alire/
+/tests/acceptance/config/

@@ -6,10 +6,8 @@ binaries print for `--help`. Do not edit by hand; run the generator.
 Two binaries, mirroring `synapse`/`synapse-hook`'s own relationship.
 `synapse-bard` is the tooling a person or an agent runs; `synapse-bard-hook`
 carries its Claude Code hooks and is registered in `settings.json` rather
-than invoked directly. Unlike `synapse`, neither binary ever imports
-`treesitter` -- `synapse-bard` parses YAML frontmatter only, so its whole
-build links no libtree-sitter and needs no C compiler, not just the hook
-side.
+than invoked directly. Neither binary links tree-sitter --
+`synapse-bard` parses YAML frontmatter only.
 
 ## synapse-bard
 

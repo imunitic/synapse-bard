@@ -166,7 +166,7 @@ package body Synapse_Bard.Hooks.Tests is
    end Dispatch_Usage_Help_And_Unknown;
 
    ---------------------------------------------------------------------------
-   --  Paths (the Zig `templatePath` and `claudeMdPath` tests)
+   --  Paths (the template and standing-instructions paths)
    ---------------------------------------------------------------------------
 
    --  A variable table holding one variable.

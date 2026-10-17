@@ -12,14 +12,14 @@
 #   ci/linux-release.sh
 #
 # Needs podman or docker. Leaves `$OUT_DIR/{synapse-bard,synapse-bard-hook}`
-# (`ada/bin` unless OUT_DIR says otherwise) and checks the highest glibc
+# (`bin` unless OUT_DIR says otherwise) and checks the highest glibc
 # version they ask for.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 root="$PWD"
 
-out_dir="${OUT_DIR:-$root/ada/bin}"
+out_dir="${OUT_DIR:-$root/bin}"
 floor="${GLIBC_FLOOR:-2.28}"
 alire_version="${ALIRE_VERSION:-2.1.1}"
 gnat_version="${GNAT_VERSION:-16.1.0}"
@@ -63,7 +63,7 @@ echo "build on ubuntu:24.04"
     curl -fsSL -o /tmp/alr.zip "https://github.com/alire-project/alire/releases/download/v${ALIRE_VERSION}/alr-${ALIRE_VERSION}-bin-${ALIRE_ARCH}-linux.zip"
     (cd /tmp && unzip -q alr.zip && install -m755 bin/alr /usr/local/bin/alr)
     mkdir -p /sysroot && tar -xzf /out/sysroot.tgz -C /sysroot
-    mkdir -p /work && cd /src/repo/ada && tar -cf - --exclude=bin --exclude=obj --exclude=alire --exclude=config --exclude=tests . | tar -xf - -C /work
+    mkdir -p /work && cd /src/repo && tar -cf - alire.toml synapse_bard.gpr src | tar -xf - -C /work
     cd /work
     alr -n toolchain --select "gnat_native=${GNAT_VERSION}" gprbuild
     SYNAPSE_USE_SYSROOT=yes SYNAPSE_SYSROOT=/sysroot alr -n build --profiles='"'"'*=release'"'"'

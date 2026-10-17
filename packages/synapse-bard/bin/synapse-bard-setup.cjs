@@ -208,7 +208,7 @@ function configureClaude() {
   settings.hooks = mergeHooksInto(settings.hooks, rendered);
 
   // The npm-install counterpart to $CLAUDE_PLUGIN_ROOT -- bard_hook's own
-  // session_start.zig checks this env var now that there's no plugin
+  // the hook's session-start handler checks this env var now that there's no plugin
   // marketplace to set CLAUDE_PLUGIN_ROOT for it. Points at PKG_ROOT --
   // synapse-bard-claude.md and Index.md.template sit directly under it.
   settings.env = settings.env || {};

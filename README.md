@@ -1,6 +1,6 @@
 # synapse-bard
 
-[![tests](https://github.com/imunitic/synapse-bard/actions/workflows/tests.yml/badge.svg)](https://github.com/imunitic/synapse-bard/actions/workflows/tests.yml)
+[![ada](https://github.com/imunitic/synapse-bard/actions/workflows/ada.yml/badge.svg)](https://github.com/imunitic/synapse-bard/actions/workflows/ada.yml)
 
 Repo-local memory for a fiction bible: a durable markdown vault plus a story graph, for Claude
 Code, Codex CLI, and OpenCode. Two stores, both repo-local (no external vault location, no network
@@ -28,34 +28,41 @@ wires up the hooks/commands/skills for that harness; run it once per harness you
 > unreleased change):
 > ```sh
 > git clone https://github.com/imunitic/synapse-bard
-> cd synapse-bard/packages/synapse-bard
+> cd synapse-bard
+> just release                                       # builds bin/synapse-bard and bin/synapse-bard-hook
+> mkdir -p packages/synapse-bard/platforms/$(node -p 'process.platform + "-" + process.arch')/bin
+> cp bin/synapse-bard bin/synapse-bard-hook packages/synapse-bard/platforms/$(node -p 'process.platform + "-" + process.arch')/bin/
+> cd packages/synapse-bard
 > node bin/synapse-bard-setup.cjs configure claude   # or: codex / opencode
 > ```
-> This needs the platform binaries built locally first (`zig build`, or `just build`) and copied
-> into `platforms/{platform}-{arch}/bin/` — see [Develop](#develop) below.
 
 ## Develop
 
+Ada 2022, built with [Alire](https://alire.ada.dev); the toolchain (`gnat_native`, `gprbuild`) comes
+with it on first use.
+
 ```sh
-brew install zig just         # if not already installed
-just build                    # compile synapse-bard / synapse-bard-hook
-just test                     # zig build test
-just build-targets            # cross-compile all three release targets
+brew install alire just       # if not already installed
+just build                    # compile synapse-bard / synapse-bard-hook (validation profile)
+just test                     # the AUnit suite in tests/unit
+just acceptance               # run the built programs in scratch repositories
 just docs-check               # verify cli.md and rendered diagrams match their sources
 just fix                      # regenerate cli.md and diagrams after a change upstream of them
+just release                  # the release binaries
+just package                  # pack them as npm packages and check the installed result
 just check                    # the full gate -- before pushing
 ```
 
-The `synapse` dependency in `build.zig.zon` is a `git+hash` pin to a tagged
-[imunitic/synapse](https://github.com/imunitic/synapse) release, resolved automatically by `zig
-build` the first time it's needed (cached afterward under `~/.cache/zig/p`). Bumping it to a newer
-synapse release is a deliberate `zig fetch --save=synapse <tag-url>` against a real tag, never an
-arbitrary commit. This build never links `treesitter` — `synapse-bard` parses YAML frontmatter
-only, so the whole build needs no libtree-sitter and no C compiler.
+The `synapse` library is an Alire git pin in `alire.toml` on a tagged
+[imunitic/synapse](https://github.com/imunitic/synapse) release commit. Bumping it to a newer
+release is a deliberate `alr pin synapse --use=<url> --commit=<tag> --subdir=synapse` against a
+real tag, never an arbitrary commit, and the same tag in `tests/unit/alire.toml` and
+`tests/acceptance/alire.toml`. The build compiles the library's vendored tree-sitter C source, so it
+needs the C compiler that ships with the GNAT toolchain; the binaries link no tree-sitter code.
 
-A tagged `vX.Y.Z` push runs [`release.yml`](.github/workflows/release.yml): cross-compiles the
-release targets and publishes the four `@imunitic/synapse-bard*` npm packages in lock-step via
-OIDC trusted publishing — no local `npm publish` needed.
+A tagged `vX.Y.Z` push runs [`release.yml`](.github/workflows/release.yml): builds the binaries
+natively on each platform and publishes the four `@imunitic/synapse-bard*` npm packages in
+lock-step via OIDC trusted publishing — no local `npm publish` needed.
 
 ## License
 

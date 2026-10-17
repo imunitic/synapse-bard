@@ -8,8 +8,8 @@
 #
 #   ci/package.sh [--keep]
 #
-# Needs `ada/bin/synapse-bard` and `ada/bin/synapse-bard-hook` built with
-# `just release` in `ada`. --keep leaves the scratch directory in place.
+# Needs `bin/synapse-bard` and `bin/synapse-bard-hook` built with
+# `just release`. --keep leaves the scratch directory in place.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -21,13 +21,13 @@ for tool in node npm jq git; do
     command -v "$tool" >/dev/null || { echo "$tool not on PATH" >&2; exit 1; }
 done
 for bin in synapse-bard synapse-bard-hook; do
-    [ -x "ada/bin/$bin" ] || { echo "ada/bin/$bin missing -- run: just release (in ada)" >&2; exit 1; }
+    [ -x "bin/$bin" ] || { echo "bin/$bin missing -- run: just release" >&2; exit 1; }
 done
 
 # On Linux, when a floor is named, the binaries must not ask for a newer glibc.
 if [ -n "${GLIBC_FLOOR:-}" ] && [ "$(uname -s)" = Linux ]; then
     for b in synapse-bard synapse-bard-hook; do
-        top="$(objdump -T "ada/bin/$b" | grep -o 'GLIBC_[0-9.]*' | sed 's/GLIBC_//' | sort -Vu | tail -1)"
+        top="$(objdump -T "bin/$b" | grep -o 'GLIBC_[0-9.]*' | sed 's/GLIBC_//' | sort -Vu | tail -1)"
         [ "$(printf '%s\n%s\n' "$top" "$GLIBC_FLOOR" | sort -V | tail -1)" = "$GLIBC_FLOOR" ] \
             || { echo "FAIL: $b needs glibc $top, above $GLIBC_FLOOR" >&2; exit 1; }
     done
@@ -46,7 +46,7 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 # The packages, copied so the checkout is never written to.
 cp -R packages/synapse-bard "$work/pkg"
 mkdir -p "$work/pkg/platforms/$plat/bin"
-cp ada/bin/synapse-bard ada/bin/synapse-bard-hook "$work/pkg/platforms/$plat/bin/"
+cp bin/synapse-bard bin/synapse-bard-hook "$work/pkg/platforms/$plat/bin/"
 
 mkdir -p "$work/tarballs" "$work/prefix"
 (cd "$work/tarballs" && npm pack "$work/pkg/platforms/$plat" --silent >/dev/null && npm pack "$work/pkg" --silent >/dev/null)

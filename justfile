@@ -1,4 +1,4 @@
-# Task runner for this repo. The recipes here mirror .github/workflows/tests.yml
+# Task runner for this repo. The recipes mirror .github/workflows/ada.yml
 # deliberately: "green locally" and "green in CI" must mean the same thing.
 #
 #   just              list the recipes
@@ -10,51 +10,50 @@ set shell := ["bash", "-uc"]
 _default:
     @just --list --unsorted
 
-# Compile the Zig binaries.
+# Alire builds a dependency in the release profile whatever the root's
+# profile; the validation profile makes the library's contracts run too.
+profile := "--profiles='*=validation'"
+
+# Build the executables.
 build:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    command -v zig >/dev/null || { echo "zig not on PATH -- brew install zig" >&2; exit 1; }
-    zig build
-    echo "zig build ok: zig-out/bin/synapse-bard"
+    alr -n build {{profile}}
 
-# Zig unit tests.
+# Build and run the AUnit suite.
 test:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    command -v zig >/dev/null || { echo "zig not on PATH -- brew install zig" >&2; exit 1; }
-    zig build test --summary all
+    cd tests/unit && alr -n build {{profile}} && ./bin/synapse_bard_tests
 
-# A POSIX path assumption or a shell-out is a portability bug that only
-# surfaces on the platform that lacks the thing. Compiling all three release
-# targets here moves that to the moment the line is written.
+# Run the built program in scratch repositories and check what it writes.
+acceptance: build
+    cd tests/acceptance && alr -n build {{profile}} && ./bin/synapse_bard_acceptance "$(cd ../.. && pwd)/bin/synapse-bard"
 
-# Compile for all three release targets.
-build-targets:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    source ci/release-targets.sh
-    for t in "${targets[@]}"; do
-        zig build -Dtarget="$t" -p "/tmp/synapse-bard-build-targets/$t"
-    done
-    echo "build-targets ok: ${targets[*]}"
+# Build the release binaries.
+release:
+    alr -n build --profiles='*=release' -- -m
 
 # Verify, never regenerate: a `check` that quietly fixes what it is checking
-# cannot fail, and the point is to catch a script edit committed without the
+# cannot fail, and the point is to catch a source edit committed without the
 # regeneration that follows from it.
 
 # Verify the generated cli.md and rendered diagrams match their sources.
-docs-check:
+docs-check: build
     ./docs/synapse-bard/generate-cli-reference.sh --check
     ./docs/synapse-bard/generate-diagrams.sh --check
 
 # Regenerate all generated artefacts; diagrams need mermaid-cli and its Chromium.
-fix:
+fix: build
     ./docs/synapse-bard/generate-cli-reference.sh
     ./docs/synapse-bard/generate-diagrams.sh
 
+# Pack the release binaries as npm packages, install them into a scratch prefix and check the installed program.
+package: release
+    ci/package.sh
+
+# Build the Linux release binaries in a container against a glibc 2.28 sysroot.
+linux-release:
+    ci/linux-release.sh
+
 # The full gate -- run before pushing.
-check: build build-targets test docs-check
+check: build test acceptance docs-check package
     @echo "all green"
 
 # Show what changed against the pushed branch.

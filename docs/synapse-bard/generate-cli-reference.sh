@@ -23,8 +23,8 @@ set -euo pipefail
 readonly HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly ROOT="$(cd "$HERE/../.." && pwd)"
 readonly OUT="$HERE/cli.md"
-readonly BARD="${SYNAPSE_BARD_BIN:-$ROOT/zig-out/bin/synapse-bard}"
-readonly BARD_HOOK="${SYNAPSE_BARD_HOOK_BIN:-$ROOT/zig-out/bin/synapse-bard-hook}"
+readonly BARD="${SYNAPSE_BARD_BIN:-$ROOT/bin/synapse-bard}"
+readonly BARD_HOOK="${SYNAPSE_BARD_HOOK_BIN:-$ROOT/bin/synapse-bard-hook}"
 
 usage() { # usage [exit-code]
   awk '/^# Usage:/ { p = 1 } p && !/^#/ { exit } p { sub(/^# ?/, ""); print }' "$0" >&2
@@ -41,7 +41,7 @@ esac
 
 for bin in "$BARD" "$BARD_HOOK"; do
   [ -x "$bin" ] || {
-    echo "generate-cli-reference: no binary at $bin -- run 'zig build', or set" >&2
+    echo "generate-cli-reference: no binary at $bin -- run 'just build', or set" >&2
     echo "  SYNAPSE_BARD_BIN/SYNAPSE_BARD_HOOK_BIN to point at ones already built" >&2
     exit 1
   }
@@ -94,10 +94,8 @@ binaries print for `--help`. Do not edit by hand; run the generator.
 Two binaries, mirroring `synapse`/`synapse-hook`'s own relationship.
 `synapse-bard` is the tooling a person or an agent runs; `synapse-bard-hook`
 carries its Claude Code hooks and is registered in `settings.json` rather
-than invoked directly. Unlike `synapse`, neither binary ever imports
-`treesitter` -- `synapse-bard` parses YAML frontmatter only, so its whole
-build links no libtree-sitter and needs no C compiler, not just the hook
-side.
+than invoked directly. Neither binary links tree-sitter --
+`synapse-bard` parses YAML frontmatter only.
 
 EOF
 

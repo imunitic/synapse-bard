@@ -4,9 +4,8 @@ A memory and structure system for fiction writing: a YAML-templated book bible
 (character/place/faction/item entries) instead of a code repo. Two binaries: `synapse-bard` is the
 tooling a person or an agent runs; `synapse-bard-hook` carries its hooks, registered under each
 harness's own mechanism (Claude Code's `settings.json`, Codex's `hooks.json`, OpenCode's plugin
-file) rather than invoked directly. Neither binary ever imports `treesitter` — `synapse-bard`
-parses YAML frontmatter only, so its whole build links no libtree-sitter and needs no C compiler,
-not just the hook side.
+file) rather than invoked directly. Neither binary links tree-sitter — `synapse-bard`
+parses YAML frontmatter only.
 
 - **[bard-graph.md](bard-graph.md)** — **Bible-graph**: the structured half. `sync`'s
   folder-taxonomy clustering (no LLM orientation pass needed), the frontmatter-only extraction
