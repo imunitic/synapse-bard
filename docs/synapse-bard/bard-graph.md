@@ -26,7 +26,7 @@ A bible's author already organizes it by folder (`characters/main/`, `world/magi
 taxonomy **is** the cluster boundary, mechanically discoverable with no interpretation step.
 
 The exact rule, settled by measurement against a real 65-file bible (see
-`findClusters`/`findBoundary` in `src/apps/bard/sync_cmd.zig`): from each top-level, non-excluded
+the cluster finder in `src/adapters/synapse_bard-sync_plan.adb`): from each top-level, non-excluded
 folder, walk down until you hit the **shallowest** directory that directly contains a `.md` file.
 That directory is the cluster boundary — every `.md` at or below it, however deep, belongs to this
 one cluster, and no further boundary is drawn beneath it even if a subdirectory has its own direct
@@ -43,7 +43,7 @@ flaw in the rule, and arguably the right outcome for a bible's six most importan
 
 ### Extraction: frontmatter only, refuse rather than guess
 
-`BardFrontmatterExtractor` (`src/adapters/bard/frontmatter.zig`) parses only the YAML frontmatter
+`Synapse_Bard.Frontmatter_Extractor` (`src/adapters/synapse_bard-frontmatter_extractor.adb`) parses only the YAML frontmatter
 block, never the markdown prose body — deliberate, so nothing here duplicates content a future
 prose-summary layer might one day own. It's a real YAML subset, not a bespoke ad-hoc parser:
 scalars, block lists (bare-scalar or list-of-objects), flow lists, arbitrary nested-map depth, and

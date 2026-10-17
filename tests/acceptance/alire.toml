@@ -1,0 +1,33 @@
+name = "synapse_bard_acceptance"
+description = "Acceptance suite for synapse-bard: the built program, as a subprocess"
+version = "0.0.0-dev"
+
+authors = ["Ivica Munitic"]
+maintainers = ["Ivica Munitic <imunitic@gmail.com>"]
+maintainers-logins = []
+licenses = "MIT"
+tags = []
+
+executables = ["synapse_bard_acceptance"]
+
+[[depends-on]]
+aunit = "^26.0.0"
+
+# Pins take effect only in the root crate's manifest, so this crate pins the
+# Synapse library itself; keep it on the same release tag as ../../alire.toml.
+[[depends-on]]
+synapse = "*"
+
+[build-switches]
+"*".contracts = "Yes"
+"*".style_checks = "Yes"
+"*".compile_checks = "Warnings"
+"*".ada_version = "Ada2022"
+
+[gpr-set-externals.'case(os)']
+windows = { SYNAPSE_OS = "windows" }
+'...' = { SYNAPSE_OS = "posix" }
+
+[[pins]]
+# Synapse release v0.14.4, the tag ../../alire.toml pins.
+synapse = { url='https://github.com/imunitic/synapse', subdir='synapse', commit='6379e28ba612515d966a10bed102d0b254e5dce9' }

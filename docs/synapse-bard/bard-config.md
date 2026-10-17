@@ -12,9 +12,9 @@ cross-project state to disambiguate.
 
 ## The one thing every command resolves, automatically
 
-`common.Roots.resolve` (`src/apps/bard/common.zig`) finds `repo_root`, `_bard/graph/`, and
-`_bard/vault/` with one `core.identity.resolve` call per invocation — the same repo-root discovery
-`bard_hook`'s own `SessionStart` handler uses for `_bard/vault/Index.md`. It walks up from the
+`Synapse_Bard.Commands.Roots.Resolve` (`src/apps/synapse_bard-commands-roots.adb`) finds the repository
+root, `_bard/graph/`, and `_bard/vault/` once per invocation — the same repo-root discovery
+`synapse-bard-hook`'s own `SessionStart` handler uses for `_bard/vault/Index.md`. It walks up from the
 current directory to find the repo root the way git itself would, so a command run from a
 subdirectory still finds `_bard/` at the top rather than looking for it relative to wherever the
 shell happened to be. Nothing about this is configurable, and nothing needs to be: there is exactly

@@ -1,17 +1,40 @@
 name: release
 
-# A release is cut by pushing a `vX.Y.Z` tag. workflow_dispatch takes an
-# explicit `tag` input for a manual re-run and checks out that tag rather
-# than whatever ref triggered the dispatch, so a manual run can never
-# accidentally build off an untagged commit.
+# A release is cut by pushing a `vX.Y.Z` tag. Builds the binaries natively on
+# each platform the npm packages cover, checks the installed packages
+# (`ci/package.sh`), then publishes the four @imunitic/synapse-bard* packages
+# in lock-step. workflow_dispatch takes an explicit `tag` input for a manual
+# re-run and checks out that tag rather than whatever ref triggered the
+# dispatch, so a manual run can never build off an untagged commit; `dry_run`
+# makes it an `npm publish --dry-run`.
+#
+# A pull request that touches how the binaries are built runs the `build` job
+# alone: the three platforms, the glibc floor and the package check.
+#
+# The Linux binaries are built by `ci/linux-release.sh`, which compiles and
+# links against a glibc 2.28 sysroot from an AlmaLinux 8 image; the script and
+# the package check both fail if a binary asks for a newer glibc.
 on:
   push:
     tags: ["v*"]
+  pull_request:
+    paths:
+      - ".github/workflows/release.yml"
+      - "src/**"
+      - "tests/**"
+      - "alire.toml"
+      - "synapse_bard.gpr"
+      - "ci/**"
+      - "packages/**"
   workflow_dispatch:
     inputs:
       tag:
         description: "Tag to release (must already exist, e.g. v0.1.0)"
         required: true
+      dry_run:
+        description: "Run `npm publish --dry-run` instead of publishing"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -22,7 +45,54 @@ permissions:
   id-token: write
 
 jobs:
-  release:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, plat: linux-x64 }
+          - { os: ubuntu-24.04-arm, plat: linux-arm64 }
+          # macos-15, not macos-latest: the macOS 26 image's SDK lists an
+          # architecture that the linker of the GNAT toolchain rejects.
+          - { os: macos-15, plat: darwin-arm64 }
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: alire-project/setup-alire@v6
+        if: runner.os != 'Linux'
+      - uses: extractions/setup-just@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Build the Linux binaries against glibc 2.28
+        if: runner.os == 'Linux'
+        run: ci/linux-release.sh
+
+      - name: Build the macOS binaries
+        if: runner.os != 'Linux'
+        run: just release
+
+      - name: Check the installed package
+        env:
+          GLIBC_FLOOR: ${{ runner.os == 'Linux' && '2.28' || '' }}
+        run: ci/package.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-${{ matrix.plat }}
+          path: |
+            bin/synapse-bard
+            bin/synapse-bard-hook
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
 
     concurrency:
@@ -32,26 +102,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.inputs.tag || github.ref_name }}
-
-      # No version pinned here -- resolved from build.zig.zon's
-      # minimum_zig_version, so the pin lives in exactly one place.
-      # cache-size-limit raised for the same reason synapse's own tests.yml
-      # raises it.
-      - uses: mlugg/setup-zig@v2
-        with:
-          cache-size-limit: 4096
-
-      - name: Resolve the release tag
-        id: tag
-        run: echo "tag=${{ github.event.inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
-
-      - name: Cross-compile each target
-        run: |
-          source ci/release-targets.sh
-          for t in "${targets[@]}"; do
-            zig build -Dtarget="$t" -Doptimize=ReleaseSafe -p "out/$t"
-          done
+          ref: ${{ github.event.inputs.tag || github.ref }}
 
       - uses: actions/setup-node@v4
         with:
@@ -62,16 +113,21 @@ jobs:
       - name: Upgrade npm for OIDC trusted-publishing support
         run: npm install -g npm@latest
 
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
       # No NODE_AUTH_TOKEN -- OIDC trusted publishing (id-token: write
       # above, plus each package's Trusted Publisher configured on
       # npmjs.com to trust this exact workflow file) is what authenticates
-      # instead. npm detects the GitHub Actions OIDC environment
-      # automatically; nothing here has to request or pass a token by hand.
+      # instead. One version, four packages, the platform packages first so
+      # the main package's optional dependencies already resolve.
       - name: Publish npm packages in lock-step
+        env:
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
-          source ci/release-targets.sh
-          v="${{ steps.tag.outputs.tag }}"
-          v="${v#v}"
+          v="${TAG#v}"
 
           dist_tag="latest"
           case "$v" in
@@ -80,18 +136,8 @@ jobs:
               dist_tag="${pre%%.*}"
               ;;
           esac
-
-          npm_platform_for() {
-            case "$1" in
-              x86_64-linux) echo linux-x64 ;;
-              aarch64-linux) echo linux-arm64 ;;
-              aarch64-macos) echo darwin-arm64 ;;
-              *)
-                echo "no npm platform package mapped for target: $1" >&2
-                exit 1
-                ;;
-            esac
-          }
+          dry=(--dry-run)
+          [ "$DRY_RUN" = "true" ] || dry=()
 
           # Re-run safety: a re-dispatch of an already-published tag skips
           # republishing instead of failing on npm's immutable-version rule.
@@ -100,15 +146,15 @@ jobs:
             if npm view "$name@$v" version >/dev/null 2>&1; then
               echo "$name@$v already published -- skipping"
             else
-              npm publish "./$dir" --access public --tag "$dist_tag"
+              npm publish "./$dir" --access public --tag "$dist_tag" "${dry[@]}"
             fi
           }
 
-          for t in "${targets[@]}"; do
-            plat="$(npm_platform_for "$t")"
+          for plat in linux-x64 linux-arm64 darwin-arm64; do
             dest="packages/synapse-bard/platforms/$plat/bin"
             mkdir -p "$dest"
-            cp "out/$t/bin/synapse-bard" "out/$t/bin/synapse-bard-hook" "$dest/"
+            cp "artifacts/bin-$plat/synapse-bard" "artifacts/bin-$plat/synapse-bard-hook" "$dest/"
+            chmod +x "$dest/synapse-bard" "$dest/synapse-bard-hook"
             tmp=$(mktemp)
             jq --arg v "$v" '.version = $v' "packages/synapse-bard/platforms/$plat/package.json" > "$tmp"
             mv "$tmp" "packages/synapse-bard/platforms/$plat/package.json"

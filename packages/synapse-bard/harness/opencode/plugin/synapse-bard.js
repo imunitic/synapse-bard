@@ -4,7 +4,7 @@
 // `hookSpecificOutput` shape the binary already reads and writes. Same
 // approach as @imunitic/synapse's own harness/opencode/plugin/synapse.js,
 // scaled down to bard's two hooks -- `session-start` and `stop-nudge` are
-// the only ones synapse-bard-hook has (see src/apps/bard_hook/main.zig);
+// the only ones synapse-bard-hook has (see src/apps/synapse_bard-hooks-dispatch.adb);
 // there is no `prompt-context`/`staleness` equivalent to wire up here.
 //
 // `synapse-bard-hook`'s own binary path isn't resolved here the usual way --

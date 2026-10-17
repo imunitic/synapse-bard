@@ -1,0 +1,53 @@
+name: ada
+
+# Builds and tests the crate on Linux and macOS. Needs no secrets; the Synapse
+# library is fetched through the git pin in alire.toml.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-15, not macos-latest: the macOS 26 image's SDK lists an architecture
+        # that the linker of the GNAT toolchain rejects.
+        os: [ubuntu-latest, macos-15]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # Installs Alire and its default toolchain (gnat_native, gprbuild); the
+      # crates' dependencies (AUnit, the Synapse library) are fetched on first build.
+      - uses: alire-project/setup-alire@v6
+
+      - uses: extractions/setup-just@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Build
+        run: just build
+
+      - name: AUnit tests
+        run: just test
+
+      - name: Acceptance tests
+        run: just acceptance
+
+      # Already part of `just check`. Repeated here only so a failure names
+      # itself in the log rather than arriving as one line in a large run.
+      - name: Generated docs are in sync
+        if: always()
+        run: ./docs/synapse-bard/generate-cli-reference.sh --check
+
+      - name: Rendered diagrams are in sync
+        if: always()
+        run: ./docs/synapse-bard/generate-diagrams.sh --check
+
+      - name: Package check
+        run: just package
