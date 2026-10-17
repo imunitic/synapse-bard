@@ -1,4 +1,6 @@
 with Ada.Directories;
+with Ada.Finalization;
+with Ada.Environment_Variables;
 with Ada.IO_Exceptions;
 
 with Synapse.Adapters.File_Bytes;
@@ -98,6 +100,64 @@ package body Acceptance.Fixtures is
       end loop;
       return Run_Program (Binary, Dir, Args);
    end Run;
+
+   --  Sets Name to Value for the life of the object, or unsets it when Value is
+   --  empty, and restores what it was.
+   type Variable_Guard (Name_Length : Natural) is
+     limited new Ada.Finalization.Limited_Controlled with
+   record
+      Name     : String (1 .. Name_Length);
+      Was_Set  : Boolean;
+      Previous : Unbounded_String;
+   end record;
+
+   overriding procedure Finalize (G : in out Variable_Guard) is
+   begin
+      if G.Was_Set then
+         Ada.Environment_Variables.Set (G.Name, To_String (G.Previous));
+      else
+         Ada.Environment_Variables.Clear (G.Name);
+      end if;
+   end Finalize;
+
+   function Guard (Name, Value : String) return Variable_Guard is
+      Existing : constant Boolean := Ada.Environment_Variables.Exists (Name);
+   begin
+      return G : Variable_Guard (Name'Length) do
+         G.Name := Name;
+         G.Was_Set := Existing;
+         if Existing then
+            G.Previous :=
+              To_Unbounded_String (Ada.Environment_Variables.Value (Name));
+         end if;
+         if Value = "" then
+            Ada.Environment_Variables.Clear (Name);
+         else
+            Ada.Environment_Variables.Set (Name, Value);
+         end if;
+      end return;
+   end Guard;
+
+   function Run_Hook
+     (Dir : String; Hook : String; Stdin : String; Home : String := "";
+      Plugin_Root : String := ""; Content_Root : String := "") return Result
+   is
+      Runner : Synapse.Adapters.System_Process.System_Runner;
+      Args   : Synapse.Core.Text_Lists.Vector;
+      G_Home : Variable_Guard := Guard ("HOME", Home);
+      G_Plug : Variable_Guard := Guard ("CLAUDE_PLUGIN_ROOT", Plugin_Root);
+      G_Cont : Variable_Guard :=
+        Guard ("SYNAPSE_BARD_CONTENT_ROOT", Content_Root);
+   begin
+      if Hook /= "" then
+         Args.Append (To_Unbounded_String (Hook));
+      end if;
+      return
+        Runner.Run
+          (Binary & "-hook", Args,
+           (Cwd       => To_Unbounded_String (Dir), Has_Stdin => True,
+            Stdin     => To_Unbounded_String (Stdin)));
+   end Run_Hook;
 
    function Contains (Text, Part : String) return Boolean is
      (for some I in Text'First .. Text'Last - Part'Length + 1 =>

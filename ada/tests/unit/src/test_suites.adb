@@ -2,6 +2,7 @@ with Pin_Tests;
 with Synapse_Bard.Cluster.Tests;
 with Synapse_Bard.Commands.Tests;
 with Synapse_Bard.Frontmatter_Extractor.Tests;
+with Synapse_Bard.Hooks.Tests;
 with Synapse_Bard.Graph_Store.Tests;
 with Synapse_Bard.Sync_Plan.Tests;
 with Synapse_Bard.Vault_Store.Tests;
@@ -29,6 +30,8 @@ package body Test_Suites is
 
    Commands_Tests : aliased Synapse_Bard.Commands.Tests.Test_Case;
 
+   Hooks_Tests : aliased Synapse_Bard.Hooks.Tests.Test_Case;
+
    function Suite return AUnit.Test_Suites.Access_Test_Suite is
    begin
       Result.Add_Test (Pin_Test_Case'Access);
@@ -39,6 +42,7 @@ package body Test_Suites is
       Result.Add_Test (Vault_Store_Tests'Access);
       Result.Add_Test (Sync_Plan_Tests'Access);
       Result.Add_Test (Commands_Tests'Access);
+      Result.Add_Test (Hooks_Tests'Access);
       return Result'Access;
    end Suite;
 
