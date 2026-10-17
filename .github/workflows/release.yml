@@ -4,14 +4,30 @@ name: release
 # explicit `tag` input for a manual re-run and checks out that tag rather
 # than whatever ref triggered the dispatch, so a manual run can never
 # accidentally build off an untagged commit.
+#
+# The `ada-build` job builds the Ada crate's binaries natively on each platform
+# and checks the installed npm packages (`ci/package.sh`); it runs for a
+# pull request that touches how they are built. `ada-publish` only does an
+# `npm publish --dry-run` of those artifacts, on a manual dispatch with
+# `dry_run`; the Zig `release` job is what publishes a tag.
 on:
   push:
     tags: ["v*"]
+  pull_request:
+    paths:
+      - ".github/workflows/release.yml"
+      - "ada/**"
+      - "ci/**"
+      - "packages/**"
   workflow_dispatch:
     inputs:
       tag:
         description: "Tag to release (must already exist, e.g. v0.1.0)"
         required: true
+      dry_run:
+        description: "Also run `npm publish --dry-run` of the Ada build"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -23,6 +39,7 @@ permissions:
 
 jobs:
   release:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
 
     concurrency:
@@ -120,3 +137,89 @@ jobs:
             packages/synapse-bard/package.json > "$tmp"
           mv "$tmp" packages/synapse-bard/package.json
           publish_if_new "packages/synapse-bard" "@imunitic/synapse-bard"
+
+  ada-build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, plat: linux-x64 }
+          - { os: ubuntu-24.04-arm, plat: linux-arm64 }
+          # macos-15, not macos-latest: the macOS 26 image's SDK lists an
+          # architecture that the linker of the GNAT toolchain rejects.
+          - { os: macos-15, plat: darwin-arm64 }
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: alire-project/setup-alire@v6
+        if: runner.os != 'Linux'
+      - uses: extractions/setup-just@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Build the Linux binaries against glibc 2.28
+        if: runner.os == 'Linux'
+        run: ci/linux-release.sh
+
+      - name: Build the macOS binaries
+        if: runner.os != 'Linux'
+        working-directory: ada
+        run: just release
+
+      - name: Check the installed package
+        env:
+          GLIBC_FLOOR: ${{ runner.os == 'Linux' && '2.28' || '' }}
+        run: ci/package.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-${{ matrix.plat }}
+          path: |
+            ada/bin/synapse-bard
+            ada/bin/synapse-bard-hook
+          if-no-files-found: error
+
+  ada-publish:
+    needs: ada-build
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.tag }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Dry-run the npm publish of the Ada build
+        env:
+          TAG: ${{ github.event.inputs.tag }}
+        run: |
+          v="${TAG#v}"
+          for plat in linux-x64 linux-arm64 darwin-arm64; do
+            dest="packages/synapse-bard/platforms/$plat/bin"
+            mkdir -p "$dest"
+            cp "artifacts/bin-$plat/synapse-bard" "artifacts/bin-$plat/synapse-bard-hook" "$dest/"
+            chmod +x "$dest/synapse-bard" "$dest/synapse-bard-hook"
+            tmp=$(mktemp)
+            jq --arg v "$v" '.version = $v' "packages/synapse-bard/platforms/$plat/package.json" > "$tmp"
+            mv "$tmp" "packages/synapse-bard/platforms/$plat/package.json"
+            npm publish "./packages/synapse-bard/platforms/$plat" --access public --dry-run
+          done
+          tmp=$(mktemp)
+          jq --arg v "$v" '.version = $v | .optionalDependencies |= map_values($v)' \
+            packages/synapse-bard/package.json > "$tmp"
+          mv "$tmp" packages/synapse-bard/package.json
+          npm publish ./packages/synapse-bard --access public --dry-run

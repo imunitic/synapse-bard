@@ -25,5 +25,25 @@ test:
 acceptance: build
     cd tests/acceptance && alr -n build {{profile}} && ./bin/synapse_bard_acceptance "$(cd ../.. && pwd)/bin/synapse-bard"
 
-# The gate: build, test and acceptance.
-check: build test acceptance
+# Build the release binaries.
+release:
+    alr -n build --profiles='*=release' -- -m
+
+# Check the generated CLI reference and diagrams against the built binaries.
+docs-check: build
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export SYNAPSE_BARD_BIN="$PWD/bin/synapse-bard" SYNAPSE_BARD_HOOK_BIN="$PWD/bin/synapse-bard-hook"
+    ../docs/synapse-bard/generate-cli-reference.sh --check
+    ../docs/synapse-bard/generate-diagrams.sh --check
+
+# Pack the release binaries as npm packages, install them into a scratch prefix and check the installed program.
+package: release
+    ../ci/package.sh
+
+# Build the Linux release binaries in a container against a glibc 2.28 sysroot.
+linux-release:
+    ../ci/linux-release.sh
+
+# The gate: build, test, acceptance and the generated docs.
+check: build test acceptance docs-check

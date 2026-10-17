@@ -5,9 +5,9 @@ name: ada
 on:
   push:
     branches: [main, ada-rewrite]
-    paths: ["ada/**", ".github/workflows/ada.yml"]
+    paths: ["ada/**", "ci/**", "packages/**", ".github/workflows/ada.yml"]
   pull_request:
-    paths: ["ada/**", ".github/workflows/ada.yml"]
+    paths: ["ada/**", "ci/**", "packages/**", ".github/workflows/ada.yml"]
   workflow_dispatch:
 
 jobs:
@@ -40,3 +40,6 @@ jobs:
 
       - name: Acceptance tests
         run: just acceptance
+
+      - name: Package check
+        run: just package

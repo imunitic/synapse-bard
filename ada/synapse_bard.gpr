@@ -1,4 +1,5 @@
 with "config/synapse_bard_config.gpr";
+with "synapse_platform.gpr";
 
 project Synapse_Bard is
 
@@ -11,6 +12,10 @@ project Synapse_Bard is
    package Compiler is
       for Default_Switches ("Ada") use Synapse_Bard_Config.Ada_Compiler_Switches;
    end Compiler;
+
+   package Linker is
+      for Default_Switches ("Ada") use Synapse_Platform.Link_Switches;
+   end Linker;
 
    package Binder is
       for Switches ("Ada") use ("-Es");
