@@ -2,7 +2,7 @@
 # directory can move without the recipes changing.
 #
 #   just              list the recipes
-#   just check        build and test -- before pushing
+#   just check        build, test and acceptance -- before pushing
 
 set shell := ["bash", "-uc"]
 
@@ -21,5 +21,9 @@ build:
 test:
     cd tests/unit && alr -n build {{profile}} && ./bin/synapse_bard_tests
 
-# The gate: build and test.
-check: build test
+# Run the built program in scratch repositories and check what it writes.
+acceptance: build
+    cd tests/acceptance && alr -n build {{profile}} && ./bin/synapse_bard_acceptance "$(cd ../.. && pwd)/bin/synapse-bard"
+
+# The gate: build, test and acceptance.
+check: build test acceptance

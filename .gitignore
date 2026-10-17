@@ -26,3 +26,7 @@ CLAUDE.local.md
 /ada/tests/unit/bin/
 /ada/tests/unit/alire/
 /ada/tests/unit/config/
+/ada/tests/acceptance/obj/
+/ada/tests/acceptance/bin/
+/ada/tests/acceptance/alire/
+/ada/tests/acceptance/config/

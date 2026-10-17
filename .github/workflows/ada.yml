@@ -37,3 +37,6 @@ jobs:
 
       - name: AUnit tests
         run: just test
+
+      - name: Acceptance tests
+        run: just acceptance
