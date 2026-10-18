@@ -816,8 +816,8 @@ package body Synapse_Bard.Commands.Tests is
    is
       pragma Unreferenced (T);
       Dir      : constant String := Make_Manuscript ("cmd-manuscript");
-      --  The folder with its symbolic links resolved, as the command prints it.
-      Resolved : constant String := Ada.Directories.Full_Name (Dir);
+      --  The folder as the command resolves ".", with symbolic links followed.
+      Resolved : constant String := Ada.Directories.Full_Name (Dir & "/.");
    begin
       Expect (Run (Dir, "manuscript"), 2, "", Usage.Manuscript_Usage,
               "no root");
