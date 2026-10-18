@@ -1,6 +1,6 @@
 ---
 name: synapse-bard-book-to-bible
-description: Draft a bible from a series manuscript, or report how the manuscript differs from an existing bible (contradictions, new facts, new entities) — the two modes of book-to-bible, chosen by whether the bible already has entity files. Use whenever the author wants a bible generated from her books, or a new book checked against the bible ("generate the bible from my manuscript", "check book 3 against the bible", "book to bible").
+description: Draft a bible from a series manuscript, or report how the manuscript differs from an existing bible (contradictions, new facts, new entities, inconsistencies within the book) — the two modes of book-to-bible, chosen by whether the bible already has entity files. Use whenever the author wants a bible generated from her books, or a new book checked against the bible ("generate the bible from my manuscript", "check book 3 against the bible", "book to bible").
 ---
 
 Run book-to-bible over a manuscript. The bible is the source of truth: **generate** drafts entity files into a bible that has none, **report** only tells the author how the manuscript differs from a bible that has some, and never writes a bible file. The author then decides, finding by finding, whether to change the book or the bible.
@@ -43,13 +43,14 @@ Write a synopsis of each chapter to `$SYNAPSE_BARD_WORK_DIR/summaries/`, one fil
 
 ## Report mode
 
-For each roster entity matched to a bible entity, compare its mentions (`_refs.tsv`) and the summaries of the chapters it appears in against the entity file's frontmatter. Report three kinds of finding:
+For each roster entity matched to a bible entity, compare its mentions (`_refs.tsv`) and the summaries of the chapters it appears in against the entity file's frontmatter. Report four kinds of finding:
 
 - **contradiction** — the book says something that cannot be true together with a value in the bible (blue eyes where the bible says brown). A difference in wording, emphasis or level of detail is not a contradiction: report it as a new fact only if it adds something the bible lacks, and otherwise leave it out;
 - **new fact** — the book states something about a known entity that the bible does not record (a scar);
-- **new entity** — a roster entry with no match in the bible.
+- **new entity** — a roster entry with no match in the bible;
+- **inconsistency within the book** — two passages of the manuscript that cannot both be true (a pool of tears said to be shallow in one chapter and deeper than the character is tall in another), whatever the bible says. It is not a contradiction, which is always against the bible, and it applies to any roster entity, new or known, and to places and events as well as characters.
 
-Every finding cites a quote with its book, chapter and line. Before it goes in the report, run `synapse-bard quote <root> <book> <chapter> <line> "<quote>"`; exit 0 means the quote really sits there. Drop or redo any finding whose quote does not verify.
+Every finding cites a quote with its book, chapter and line; an inconsistency cites one quote for each passage. Before it goes in the report, run `synapse-bard quote <root> <book> <chapter> <line> "<quote>"`; exit 0 means the quote really sits there. Drop or redo any finding whose quote does not verify.
 
 Print the report in the reply, grouped by entity, each finding labelled, naming the bible field and value where there is one, and the quote with its location. It is a report for a writer to read, not a code diff. Create or modify nothing in the bible. If the manuscript agrees with the bible everywhere, say so.
 

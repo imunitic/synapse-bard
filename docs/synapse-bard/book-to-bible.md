@@ -3,7 +3,7 @@
 Two modes over a series manuscript, chosen by whether the bible already has entity files. The bible is the source of truth.
 
 - **generate** — the bible has no entity files yet. An entity file is drafted for every entity found in the manuscript.
-- **report** — the bible has entity files. Nothing in it is created or changed: the report lists how the manuscript differs from the bible, as a diff for the author to read, not a code diff. Each finding is a **contradiction** (the book says blue eyes, the bible says brown), a **new fact** about a known entity (a scar the bible does not record) or a **new entity**. The author decides finding by finding whether to change the book or the bible.
+- **report** — the bible has entity files. Nothing in it is created or changed: the report lists how the manuscript differs from the bible, as a diff for the author to read, not a code diff. Each finding is a **contradiction** (the book says blue eyes, the bible says brown), a **new fact** about a known entity (a scar the bible does not record), a **new entity**, or an **inconsistency within the book** (two passages of the manuscript that cannot both be true, whatever the bible says). The author decides finding by finding whether to change the book or the bible.
 
 `synapse-bard mode` prints which one applies. The LLM-driven steps (roster detection, chapter summaries, the report, the drafting) are run by the agent from the `synapse-bard-book-to-bible` command; the binary does the mechanical ones and does no network I/O.
 
