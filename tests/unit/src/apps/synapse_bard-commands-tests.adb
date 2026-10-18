@@ -815,7 +815,9 @@ package body Synapse_Bard.Commands.Tests is
      (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
       pragma Unreferenced (T);
-      Dir : constant String := Make_Manuscript ("cmd-manuscript");
+      Dir      : constant String := Make_Manuscript ("cmd-manuscript");
+      --  The folder with its symbolic links resolved, as the command prints it.
+      Resolved : constant String := Ada.Directories.Full_Name (Dir);
    begin
       Expect (Run (Dir, "manuscript"), 2, "", Usage.Manuscript_Usage,
               "no root");
@@ -823,9 +825,9 @@ package body Synapse_Bard.Commands.Tests is
               Usage.Manuscript_Usage, "--help");
       Expect
         (Run (Dir, "manuscript", "."), 0,
-         "The long road" & TAB & "Departure" & TAB & Dir
+         "The long road" & TAB & "Departure" & TAB & Resolved
          & "/the_long_road/Departure.md" & TAB & "1" & TAB & "2" & LF
-         & "The long road" & TAB & "Arrival" & TAB & Dir
+         & "The long road" & TAB & "Arrival" & TAB & Resolved
          & "/the_long_road/Arrival.md" & TAB & "1" & TAB & "1" & LF, "",
          "a relative root is under the start directory");
       Put_File (Dir, "index.md", L ("1. missing/"));
