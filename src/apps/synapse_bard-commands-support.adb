@@ -28,6 +28,30 @@ package body Synapse_Bard.Commands.Support is
       then Text (Text'First .. Text'Last - 3)
       else Text);
 
+   function Resolve_Path (Env : Environment; Path : String) return String is
+     (if Path'Length > 0 and then Path (Path'First) = '/' then Path
+      else Ada.Strings.Unbounded.To_String (Env.Start) & "/" & Path);
+
+   function Content_Root (Env : Environment) return Maybe_Text is
+      Plugin : constant Maybe_Text := Env.Vars.Get ("CLAUDE_PLUGIN_ROOT");
+   begin
+      if Plugin.Found then
+         return Plugin;
+      end if;
+      return Env.Vars.Get ("SYNAPSE_BARD_CONTENT_ROOT");
+   end Content_Root;
+
+   function Work_Dir (Env : Environment) return Maybe_Text is
+      Value : constant Maybe_Text := Env.Vars.Get ("SYNAPSE_BARD_WORK_DIR");
+   begin
+      if Value.Found
+        and then Ada.Strings.Unbounded.Length (Value.Value) > 0
+      then
+         return Value;
+      end if;
+      return Synapse.Core.Optional_Text.None;
+   end Work_Dir;
+
    function Read_Source (Path : String) return Maybe_Text is
    begin
       return Synapse.Core.Optional_Text.Of_Value

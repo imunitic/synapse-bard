@@ -7,6 +7,8 @@ with Synapse_Bard.Graph_Store.Tests;
 with Synapse_Bard.Sync_Plan.Tests;
 with Synapse_Bard.Vault_Store.Tests;
 with Synapse_Bard.Frontmatter_Fields.Tests;
+with Synapse_Bard.Grounding.Tests;
+with Synapse_Bard.Manuscript.Tests;
 
 package body Test_Suites is
 
@@ -19,6 +21,10 @@ package body Test_Suites is
 
    Frontmatter_Extractor_Tests :
      aliased Synapse_Bard.Frontmatter_Extractor.Tests.Test_Case;
+
+   Manuscript_Tests : aliased Synapse_Bard.Manuscript.Tests.Test_Case;
+
+   Grounding_Tests : aliased Synapse_Bard.Grounding.Tests.Test_Case;
 
    Graph_Store_Tests : aliased Synapse_Bard.Graph_Store.Tests.Test_Case;
 
@@ -37,6 +43,8 @@ package body Test_Suites is
       Result.Add_Test (Pin_Test_Case'Access);
       Result.Add_Test (Frontmatter_Fields_Tests'Access);
       Result.Add_Test (Frontmatter_Extractor_Tests'Access);
+      Result.Add_Test (Manuscript_Tests'Access);
+      Result.Add_Test (Grounding_Tests'Access);
       Result.Add_Test (Graph_Store_Tests'Access);
       Result.Add_Test (Cluster_Tests'Access);
       Result.Add_Test (Vault_Store_Tests'Access);

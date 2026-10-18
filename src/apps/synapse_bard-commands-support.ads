@@ -24,6 +24,19 @@ package Synapse_Bard.Commands.Support is
    --  A wikilink target with a literal `.md` resolves like one without.
    function Strip_Md_Suffix (Text : String) return String;
 
+   --  Path as an absolute path: itself when it already is one, else under the
+   --  directory the command was started in.
+   function Resolve_Path (Env : Environment; Path : String) return String;
+
+   --  The package's content root, where the files it ships live:
+   --  $CLAUDE_PLUGIN_ROOT, else $SYNAPSE_BARD_CONTENT_ROOT; none when neither
+   --  is set. The same order the hooks use.
+   function Content_Root (Env : Environment) return Maybe_Text;
+
+   --  $SYNAPSE_BARD_WORK_DIR, where the book-to-bible steps keep what they
+   --  produce; none when it is unset or empty.
+   function Work_Dir (Env : Environment) return Maybe_Text;
+
    --  The text of a file of at most 1 MiB; none when it cannot be read.
    function Read_Source (Path : String) return Maybe_Text;
 

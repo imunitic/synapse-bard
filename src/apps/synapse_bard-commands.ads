@@ -2,6 +2,7 @@ with Ada.Strings.Unbounded;
 
 with Synapse.Core.Text_Lists;
 with Synapse.Ports.Console;
+with Synapse.Ports.Variables;
 
 --  The subcommands of the `synapse-bard` executable. Each is a function of an
 --  Environment and its arguments: what it may write is passed in, so a command
@@ -22,7 +23,8 @@ package Synapse_Bard.Commands is
    subtype Arguments is Synapse.Core.Text_Lists.Vector;
 
    type Environment
-     (Console : not null access Synapse.Ports.Console.Console'Class) is
+     (Console : not null access Synapse.Ports.Console.Console'Class;
+      Vars    : not null access Synapse.Ports.Variables.Variables'Class) is
    limited record
       --  The directory the command was started in, absolute.
       Start : Ada.Strings.Unbounded.Unbounded_String;

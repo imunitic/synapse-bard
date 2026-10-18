@@ -36,7 +36,25 @@ package Synapse_Bard.Commands.Usage is
      LF & "  verify                        check frontmatter/pr" &
      "ose-body links and" & LF &
      "                                kinds: values agains" &
-     "t the graph" & LF;
+     "t the graph" & LF &
+     "  manuscript <root>             check a series manus" &
+     "cript and list its" & LF &
+     "                                books and chapters" & LF &
+     "  ground <root> <roster>        find where the manus" &
+     "cript names each" & LF &
+     "                                roster entity, into " &
+     "$SYNAPSE_BARD_WORK_DIR" & LF &
+     "  quote <root> <book> <chapter> <line> <text>" & LF &
+     "                                check a quote sits o" &
+     "n a cited line" & LF &
+     "  templates [--install]         the entity kinds and" &
+     " their template" & LF &
+     "                                files; --install cop" &
+     "ies in the default" & LF &
+     "                                set when there is no" & "ne" & LF &
+     "  mode                          generate or report, " &
+     "by whether the" & LF &
+     "                                bible has entity fil" & "es" & LF;
 
    Field_Usage : constant String :=
      "usage: synapse-bard field <node> <key>" & LF & "" & LF &
@@ -119,11 +137,63 @@ package Synapse_Bard.Commands.Usage is
 
    Verify_Usage : constant String :=
      "usage: synapse-bard verify" & LF & "" & LF &
-     "Checks every entity's frontmatter refs and prose-bod" &
-     "y [[wikilinks]]" & LF &
-     "resolve to a real entity, and every kinds: value mat" &
-     "ches the settled" & LF &
-     "vocabulary. Read-only -- reports findings, fixes not" &
-     "hing. Exit 1 if" & LF & "any check found something." & LF;
+     "Checks every entity's frontmatter refs and prose-body [[wikilinks]]" &
+     LF & "resolve to a real entity, and every kinds: value is one the" & LF &
+     "template set's kinds template (kinds_template.md, its kinds: field)" &
+     LF & "enumerates; without a kinds template the values are not checked." &
+     LF & "Read-only -- reports findings, fixes nothing. Exit 1 if any check" &
+     LF & "found something." & LF;
+
+   Manuscript_Usage : constant String :=
+     "usage: synapse-bard manuscript <root>" & LF & "" & LF &
+     "  <root>  a folder holding an index.md: a numbered list" & LF &
+     "          of paths, one per book, in series order. A book" & LF &
+     "          is a folder with its own index.md listing its" & LF &
+     "          chapter files, or a single .md file with one H1" & LF &
+     "          (the title) and one H2 per chapter." & LF & "" & LF &
+     "Checks the manuscript and prints one tab-separated line" & LF &
+     "per chapter: book, chapter, file, first line, last line." & LF &
+     "A folder or file name written as a slug (_ or - and no" & LF &
+     "space) is shown as a title: they become spaces and the" & LF &
+     "first letter is capitalized; any other name is shown as" & LF &
+     "written. Exit 1 with the reason when the manuscript does" & LF &
+     "not conform." & LF;
+
+   Ground_Usage : constant String :=
+     "usage: synapse-bard ground <root> <roster>" & LF & "" & LF &
+     "  <root>    a manuscript folder, as for `manuscript`" & LF &
+     "  <roster>  a file with one entity per line, tab-separated:" & LF &
+     "            name, kind, then any number of aliases" & LF & "" & LF &
+     "Writes $SYNAPSE_BARD_WORK_DIR/_refs.tsv, one tab-separated" & LF &
+     "line per whole-word mention of a name or alias: term," & LF &
+     "entity, book, chapter, file, line, SHA-256 of the line." & LF &
+     "Sorted by term, then entity, then position. Pronouns and" & LF &
+     "other mentions without a name form are not found. Exit 1" & LF &
+     "when the variable is unset or an input is refused." & LF;
+
+   Quote_Usage : constant String :=
+     "usage: synapse-bard quote <root> <book> <chapter> <line> <text>" &
+     LF & "" & LF &
+     "Checks that <text> sits within line <line> of chapter" & LF &
+     "<chapter> of book <book>, the line being inside that" & LF &
+     "chapter. Names are the titles `manuscript` prints. Exit 0" & LF &
+     "when it does, 1 when it does not." & LF;
+
+   Templates_Usage : constant String :=
+     "usage: synapse-bard templates" & LF &
+     "       synapse-bard templates --install" & LF & "" & LF &
+     "Prints one tab-separated line per template of the bible's" & LF &
+     "_templates/: its kind and the path of its file (a" & LF &
+     "{kind}_template.md). Exit 1 when it holds none." & LF & "" & LF &
+     "  --install    copy the default template set the package ships" & LF &
+     "               into _templates/ and print each copy. Refused when" & LF &
+     "               _templates/ already holds a template, so nothing is" & LF &
+     "               ever overwritten." & LF;
+
+   Mode_Usage : constant String :=
+     "usage: synapse-bard mode" & LF & "" & LF &
+     "Prints `generate` when the bible has no entity files yet and" & LF &
+     "`report` when it has any: the two modes of book-to-bible." & LF &
+     "An entity file is one `sync` would ingest." & LF;
 
 end Synapse_Bard.Commands.Usage;

@@ -7,6 +7,8 @@ Run `synapse-bard sync` and report its output back to the author.
 
 ## Running sync
 
+First run `synapse-bard templates`. If it exits non-zero the bible has no template set: ask the author whether to install the default set the package ships, then stop either way, without running sync. On yes, run `synapse-bard templates --install`, tell her what it copied and that the copies in `_templates/` are hers to customize before she runs sync again. On no, say that sync will run once she has templates or asks again.
+
 Run `synapse-bard sync` (a shell call — this is the CLI binary, not something this skill
 reimplements). It always does a full re-ingest: walks every top-level, non-`_`/`.`-prefixed folder for
 `.md` files, clusters them, and writes one `_bard/graph/{Cluster Title}.md` per cluster, removing any
