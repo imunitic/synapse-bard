@@ -2,11 +2,16 @@ with Ada.Directories;
 with Ada.IO_Exceptions;
 
 with Synapse.Adapters.File_Bytes;
+with Synapse.Core.Text_Lists;
+
+with Synapse_Bard.Files;
 
 package body Synapse_Bard.Templates is
 
    use Ada.Strings.Unbounded;
-   use type Ada.Directories.File_Kind;
+   use type Files.Read_Status;
+
+   Largest_Template : constant := 2**20;
 
    function "<" (Left, Right : Template) return Boolean is
      (Left.Kind < Right.Kind);
@@ -19,9 +24,7 @@ package body Synapse_Bard.Templates is
       Search : Ada.Directories.Search_Type;
       Item   : Ada.Directories.Directory_Entry_Type;
    begin
-      if not Ada.Directories.Exists (Dir)
-        or else Ada.Directories.Kind (Dir) /= Ada.Directories.Directory
-      then
+      if not Files.Is_Directory (Dir) then
          return Result;
       end if;
       Ada.Directories.Start_Search
@@ -70,6 +73,7 @@ package body Synapse_Bard.Templates is
         (if Content_Root = "" then Template_Vectors.Empty_Vector
          else Templates_In (Content_Root & "/templates"));
       Copies  : Template_Vectors.Vector;
+      Texts   : Synapse.Core.Text_Lists.Vector;
    begin
       if not Templates_In (Target).Is_Empty then
          return Installed.Failure
@@ -80,17 +84,32 @@ package body Synapse_Bard.Templates is
          return Installed.Failure
            (To_Unbounded_String ("the package ships no default template set"));
       end if;
-      Ada.Directories.Create_Path (Target);
+      --  Everything is read before anything is written, so a template that
+      --  cannot be read leaves no partial set behind.
       for T of Shipped loop
          declare
+            Text   : Unbounded_String;
+            Status : Files.Read_Status;
+         begin
+            Files.Read (To_String (T.Path), Largest_Template, Text, Status);
+            if Status /= Files.Read_Ok then
+               return Installed.Failure
+                 (To_Unbounded_String
+                    ("cannot read " & To_String (T.Path)));
+            end if;
+            Texts.Append (Text);
+         end;
+      end loop;
+      Ada.Directories.Create_Path (Target);
+      for I in 1 .. Natural (Shipped.Length) loop
+         declare
             Destination : constant String :=
-              Target & "/" & To_String (T.Kind) & Suffix;
+              Target & "/" & To_String (Shipped (I).Kind) & Suffix;
          begin
             Synapse.Adapters.File_Bytes.Write
-              (Destination,
-               Synapse.Adapters.File_Bytes.Read (To_String (T.Path), 2**20));
+              (Destination, To_String (Texts (I)));
             Copies.Append
-              (Template'(Kind => T.Kind,
+              (Template'(Kind => Shipped (I).Kind,
                          Path => To_Unbounded_String (Destination)));
          end;
       end loop;
@@ -98,8 +117,7 @@ package body Synapse_Bard.Templates is
    exception
       when Ada.IO_Exceptions.Name_Error | Ada.IO_Exceptions.Use_Error
          | Ada.IO_Exceptions.Device_Error | Ada.IO_Exceptions.End_Error
-         | Ada.IO_Exceptions.Data_Error
-         | Synapse.Adapters.File_Bytes.Too_Large =>
+         | Ada.IO_Exceptions.Data_Error =>
          return Installed.Failure
            (To_Unbounded_String ("cannot copy the default templates into "
                                  & Target));

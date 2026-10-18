@@ -10,15 +10,15 @@ package body Synapse_Bard.Commands.Templates is
    use Ada.Strings.Unbounded;
    use Support;
 
-   TAB : constant Character := Character'Val (9);
-
    function Run (Env : Environment; Args : Arguments) return Exit_Code is
       Install : constant Boolean :=
         Count (Args) = 1 and then Arg (Args, 1) = "--install";
+      Early   : constant Exit_Options.Option :=
+        (if Install then Exit_Options.None
+         else Check_Usage (Env, Usage.Templates_Usage, Args, 0));
    begin
-      if not Args.Is_Empty and then not Install then
-         Err_Text (Env, Usage.Templates_Usage);
-         return (if Is_Help (Arg (Args, 1)) then 0 else 2);
+      if Early.Found then
+         return Early.Value;
       end if;
       declare
          Found : constant Roots.Roots_Options.Option :=

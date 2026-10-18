@@ -33,35 +33,6 @@ package body Synapse_Bard.Manuscript.Tests is
    function Has (Text, Part : String) return Boolean is
      (Ada.Strings.Fixed.Index (Text, Part) > 0);
 
-   procedure Unslugify_Makes_A_Title_From_A_Name
-     (T : in out AUnit.Test_Cases.Test_Case'Class)
-   is
-      pragma Unreferenced (T);
-   begin
-      Assert
-        (Unslugify ("some_title_of_the_chapter.md")
-         = "Some title of the chapter", "underscores and extension");
-      Assert (Unslugify ("the_star-forge") = "The star forge", "folder name");
-      Assert
-        (Unslugify ("01_the_beginning.md") = "01 the beginning",
-         "a numeric prefix stays");
-      Assert
-        (Unslugify ("Keep_McGregor") = "Keep McGregor",
-         "no other character changes");
-      Assert (Unslugify ("notes.txt") = "notes.txt", "only .md is dropped");
-      Assert
-        (Unslugify ("The Star Forge") = "The Star Forge",
-         "a name with spaces is already a title");
-      Assert
-        (Unslugify ("The Star Forge.md") = "The Star Forge",
-         "the extension still goes");
-      Assert
-        (Unslugify ("the star_forge") = "the star_forge",
-         "a space means it is not a slug");
-      Assert (Unslugify ("Prologue.md") = "Prologue", "no separator");
-      Assert (Unslugify ("") = "", "empty stays empty");
-   end Unslugify_Makes_A_Title_From_A_Name;
-
    procedure A_Series_Lists_Folder_And_File_Books_In_Index_Order
      (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
@@ -202,6 +173,35 @@ package body Synapse_Bard.Manuscript.Tests is
       Scratch_Dirs.Remove (Root);
    end A_Book_Folder_Needs_Its_Own_Index;
 
+   procedure A_Symbolic_Link_Is_Refused
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      Root    : constant String := Scratch_Dirs.Make ("manuscript-link");
+      Outside : constant String := Scratch_Dirs.Make ("manuscript-outside");
+   begin
+      Put (Outside, "stolen.md", "# Stolen" & LF & "## One" & LF & "x" & LF);
+      Put (Outside, "book/index.md", "1. one.md" & LF);
+      Put (Outside, "book/one.md", "text" & LF);
+      Scratch_Dirs.Link (Outside & "/stolen.md", Root & "/stolen.md");
+      Put (Root, "index.md", "1. stolen.md" & LF);
+      Assert (Has (Refusal (Root), "'stolen.md' is or passes through a symbol"),
+              "a linked book file");
+      Scratch_Dirs.Remove (Root);
+      Put (Root, "index.md", "1. book/" & LF);
+      Scratch_Dirs.Link (Outside & "/book", Root & "/book");
+      Assert (Has (Refusal (Root), "'book' is or passes through a symbol"),
+              "a linked book folder");
+      Scratch_Dirs.Remove (Root);
+      Put (Root, "index.md", "1. book/" & LF);
+      Put (Root, "book/index.md", "1. one.md" & LF);
+      Scratch_Dirs.Link (Outside & "/book/one.md", Root & "/book/one.md");
+      Assert (Has (Refusal (Root), "'one.md' is or passes through a symbol"),
+              "a linked chapter file");
+      Scratch_Dirs.Remove (Root);
+      Scratch_Dirs.Remove (Outside);
+   end A_Symbolic_Link_Is_Refused;
+
    overriding
    function Name (T : Test_Case) return AUnit.Message_String is
       pragma Unreferenced (T);
@@ -214,8 +214,8 @@ package body Synapse_Bard.Manuscript.Tests is
       use AUnit.Test_Cases.Registration;
    begin
       Register_Routine
-        (T, Unslugify_Makes_A_Title_From_A_Name'Access,
-         "Unslugify turns a file or folder name into a title");
+        (T, A_Symbolic_Link_Is_Refused'Access,
+         "a listed path that is or passes through a symbolic link is refused");
       Register_Routine
         (T, A_Series_Lists_Folder_And_File_Books_In_Index_Order'Access,
          "a series lists folder and single-file books in index order");

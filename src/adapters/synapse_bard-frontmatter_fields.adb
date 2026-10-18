@@ -2,6 +2,7 @@ with Ada.Strings.Unbounded;
 
 with Synapse.Core.Frontmatter;
 with Synapse.Core.Wikilinks;
+with Synapse_Bard.Syntax;
 
 package body Synapse_Bard.Frontmatter_Fields is
 
@@ -9,7 +10,7 @@ package body Synapse_Bard.Frontmatter_Fields is
 
    use Ada.Strings.Unbounded;
 
-   LF : constant Character := Character'Val (10);
+   LF : constant Character := Synapse_Bard.Syntax.LF;
 
    function Line_Text (Source : String; Item : FM.Span) return String is
      (Source (Source'First + Item.First .. Source'First + Item.Stop - 1));

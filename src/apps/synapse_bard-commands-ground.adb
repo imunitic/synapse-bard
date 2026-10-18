@@ -1,9 +1,9 @@
 with Ada.Directories;
 with Ada.IO_Exceptions;
-with Ada.Strings.Fixed;
 with Ada.Strings.Unbounded;
 
 with Synapse.Adapters.File_Bytes;
+with Synapse.Core.Decimal_Image;
 
 with Synapse_Bard.Commands.Support;
 with Synapse_Bard.Commands.Usage;
@@ -15,42 +15,32 @@ package body Synapse_Bard.Commands.Ground is
    use Ada.Strings.Unbounded;
    use Support;
 
-   function Image (Value : Natural) return String is
-     (Ada.Strings.Fixed.Trim (Natural'Image (Value), Ada.Strings.Left));
+   package Books renames Synapse_Bard.Manuscript;
+
+   function Image (Value : Natural) return String
+   renames Synapse.Core.Decimal_Image.Image;
 
    function Run (Env : Environment; Args : Arguments) return Exit_Code is
+      Early : constant Exit_Options.Option :=
+        Check_Usage (Env, Usage.Ground_Usage, Args, 2);
    begin
-      if Args.Is_Empty then
-         Err_Text (Env, Usage.Ground_Usage);
-         return 2;
-      end if;
-      if Is_Help (Arg (Args, 1)) then
-         Err_Text (Env, Usage.Ground_Usage);
-         return 0;
-      end if;
-      if Count (Args) /= 2 then
-         Err_Text (Env, Usage.Ground_Usage);
-         return 2;
+      if Early.Found then
+         return Early.Value;
       end if;
       declare
          Work   : constant Maybe_Text := Work_Dir (Env);
-         Loaded : constant Synapse_Bard.Manuscript.Loaded.Result :=
-           Synapse_Bard.Manuscript.Load (Resolve_Path (Env, Arg (Args, 1)));
+         Loaded : constant Books.Loaded.Result :=
+           Load_Manuscript (Env, "ground", Arg (Args, 1));
          Source : constant Maybe_Text :=
            Read_Source (Resolve_Path (Env, Arg (Args, 2)));
       begin
+         if not Books.Loaded.Is_Success (Loaded) then
+            return 1;
+         end if;
          if not Work.Found then
             Err_Text
               (Env,
                "synapse-bard ground: SYNAPSE_BARD_WORK_DIR is not set" & LF);
-            return 1;
-         end if;
-         if not Synapse_Bard.Manuscript.Loaded.Is_Success (Loaded) then
-            Err_Text
-              (Env,
-               "synapse-bard ground: "
-               & To_String (Synapse_Bard.Manuscript.Loaded.Error (Loaded))
-               & LF);
             return 1;
          end if;
          if not Source.Found then
@@ -75,7 +65,7 @@ package body Synapse_Bard.Commands.Ground is
             declare
                Found : constant Synapse_Bard.Grounding.Reference_Vectors.Vector
                  := Synapse_Bard.Grounding.Ground
-                      (Synapse_Bard.Manuscript.Loaded.Value (Loaded),
+                      (Books.Loaded.Value (Loaded),
                        Synapse_Bard.Grounding.Parsed.Value (Roster));
                Path  : constant String :=
                  Resolve_Path (Env, To_String (Work.Value)) & "/_refs.tsv";

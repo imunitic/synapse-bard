@@ -1,17 +1,13 @@
-with Ada.Directories;
-with Ada.IO_Exceptions;
 with Ada.Strings.Unbounded;
 
-with Synapse.Adapters.File_Bytes;
-
 with Synapse_Bard.Commands.Roots;
+with Synapse_Bard.Files;
 with Synapse_Bard.Hooks.Output;
 with Synapse_Bard.Hooks.Payload;
 
 package body Synapse_Bard.Hooks.Session_Start is
 
    use Ada.Strings.Unbounded;
-   use type Ada.Directories.File_Kind;
 
    Blank_Line : constant String := [Character'Val (10), Character'Val (10)];
 
@@ -41,15 +37,7 @@ package body Synapse_Bard.Hooks.Session_Start is
      (Under_Root (Vars, "synapse-bard-claude.md"));
 
    function Bard_Enabled (Repo_Root : String) return Boolean is
-      Path : constant String := Repo_Root & "/_bard";
-   begin
-      return
-        Ada.Directories.Exists (Path)
-        and then Ada.Directories.Kind (Path) = Ada.Directories.Directory;
-   exception
-      when Ada.IO_Exceptions.Name_Error | Ada.IO_Exceptions.Use_Error =>
-         return False;
-   end Bard_Enabled;
+     (Files.Is_Directory (Repo_Root & "/_bard"));
 
    function Absolute (Start, Cwd : String) return String is
    begin
@@ -65,20 +53,8 @@ package body Synapse_Bard.Hooks.Session_Start is
    end Absolute;
 
    --  The text of a file, nothing when it cannot be read or is over Limit.
-   function Read_Text (Path : String; Limit : Natural) return Maybe_Text is
-   begin
-      return Synapse.Core.Optional_Text.Of_Value
-        (To_Unbounded_String
-           (Synapse.Adapters.File_Bytes.Read (Path, Limit)));
-   exception
-      when Synapse.Adapters.File_Bytes.Too_Large
-         | Ada.IO_Exceptions.Name_Error
-         | Ada.IO_Exceptions.Use_Error
-         | Ada.IO_Exceptions.Device_Error
-         | Ada.IO_Exceptions.End_Error
-         | Ada.IO_Exceptions.Data_Error =>
-         return Synapse.Core.Optional_Text.None;
-   end Read_Text;
+   function Read_Text (Path : String; Limit : Positive) return Maybe_Text
+   renames Files.Read_Text;
 
    procedure Run (Env : Environment) is
       Input : constant Payload.Payload := Payload.Read (Env);

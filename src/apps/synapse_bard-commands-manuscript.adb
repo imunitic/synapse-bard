@@ -1,5 +1,6 @@
-with Ada.Strings.Fixed;
 with Ada.Strings.Unbounded;
+
+with Synapse.Core.Decimal_Image;
 
 with Synapse_Bard.Commands.Support;
 with Synapse_Bard.Commands.Usage;
@@ -10,42 +11,27 @@ package body Synapse_Bard.Commands.Manuscript is
    use Ada.Strings.Unbounded;
    use Support;
 
-   TAB : constant Character := Character'Val (9);
+   package Books renames Synapse_Bard.Manuscript;
 
-   function Image (Value : Natural) return String is
-     (Ada.Strings.Fixed.Trim (Natural'Image (Value), Ada.Strings.Left));
+   function Image (Value : Natural) return String
+   renames Synapse.Core.Decimal_Image.Image;
 
    function Run (Env : Environment; Args : Arguments) return Exit_Code is
+      Early : constant Exit_Options.Option :=
+        Check_Usage (Env, Usage.Manuscript_Usage, Args, 1);
    begin
-      if Args.Is_Empty then
-         Err_Text (Env, Usage.Manuscript_Usage);
-         return 2;
-      end if;
-      if Is_Help (Arg (Args, 1)) then
-         Err_Text (Env, Usage.Manuscript_Usage);
-         return 0;
-      end if;
-      if Count (Args) > 1 then
-         Err_Text
-           (Env,
-            "synapse-bard manuscript: unexpected argument '" & Arg (Args, 2)
-            & "'" & LF & Usage.Manuscript_Usage);
-         return 2;
+      if Early.Found then
+         return Early.Value;
       end if;
       declare
-         Loaded : constant Synapse_Bard.Manuscript.Loaded.Result :=
-           Synapse_Bard.Manuscript.Load (Resolve_Path (Env, Arg (Args, 1)));
+         Loaded : constant Books.Loaded.Result :=
+           Load_Manuscript (Env, "manuscript", Arg (Args, 1));
          Output : Unbounded_String;
       begin
-         if not Synapse_Bard.Manuscript.Loaded.Is_Success (Loaded) then
-            Err_Text
-              (Env,
-               "synapse-bard manuscript: "
-               & To_String (Synapse_Bard.Manuscript.Loaded.Error (Loaded))
-               & LF);
+         if not Books.Loaded.Is_Success (Loaded) then
             return 1;
          end if;
-         for B of Synapse_Bard.Manuscript.Loaded.Value (Loaded) loop
+         for B of Books.Loaded.Value (Loaded) loop
             for C of B.Chapters loop
                Append
                  (Output,

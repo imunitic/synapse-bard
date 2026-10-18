@@ -9,15 +9,17 @@ with Synapse_Bard.Commands.Roots;
 with Synapse_Bard.Hooks.Output;
 with Synapse_Bard.Hooks.Payload;
 with Synapse_Bard.Hooks.Session_Start;
+with Synapse_Bard.Syntax;
+with Synapse.Core.Decimal_Image;
 
 package body Synapse_Bard.Hooks.Stop_Nudge is
 
    use Ada.Strings.Unbounded;
 
-   LF : constant Character := Character'Val (10);
+   LF : constant Character := Synapse_Bard.Syntax.LF;
 
-   function Image (Value : Natural) return String is
-     (Ada.Strings.Fixed.Trim (Natural'Image (Value), Ada.Strings.Left));
+   function Image (Value : Natural) return String
+   renames Synapse.Core.Decimal_Image.Image;
 
    procedure Complain (Env : Environment; Text : String) is
    begin

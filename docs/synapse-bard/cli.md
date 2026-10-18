@@ -205,8 +205,8 @@ _templates/: its kind and the path of its file (a
 
   --install    copy the default template set the package ships
                into _templates/ and print each copy. Refused when
-               _templates/ already holds a template, so nothing is
-               ever overwritten.
+               _templates/ already holds a template, so nothing
+               is ever overwritten.
 ```
 
 ### synapse-bard mode

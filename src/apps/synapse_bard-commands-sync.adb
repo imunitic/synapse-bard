@@ -13,14 +13,15 @@ with Synapse_Bard.Commands.Usage;
 with Synapse_Bard.Graph_Store;
 with Synapse_Bard.Sync_Plan;
 with Synapse_Bard.Vault_Index_Template;
+with Synapse.Core.Decimal_Image;
 
 package body Synapse_Bard.Commands.Sync is
 
    use Ada.Strings.Unbounded;
    use Support;
 
-   function Image (Value : Natural) return String is
-     (Ada.Strings.Fixed.Trim (Natural'Image (Value), Ada.Strings.Left));
+   function Image (Value : Natural) return String
+   renames Synapse.Core.Decimal_Image.Image;
 
    --  Seeds `Index.md` of the vault from the starter index when it does not
    --  exist. Bringing the tool up in a repository with `sync` is the signal

@@ -23,9 +23,10 @@ package Synapse_Bard.Hooks.Session_Start is
    --  installed. Shared with the stop nudge.
    function Bard_Enabled (Repo_Root : String) return Boolean;
 
-   --  `<root>/Index.md.template`, where the root is `SYNAPSE_BARD_CONTENT_ROOT`,
-   --  the folder the npm package is installed in. Nothing when it is unset; a
-   --  variable set to the empty string counts.
+   --  `<root>/Index.md.template`, where the root is
+   --  `SYNAPSE_BARD_CONTENT_ROOT`, the folder the npm package is installed
+   --  in. Nothing when it is unset; a variable set to the empty string
+   --  counts.
    function Template_Path
      (Vars : Synapse.Ports.Variables.Variables'Class) return Maybe_Text;
 

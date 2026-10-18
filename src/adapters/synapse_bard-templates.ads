@@ -25,8 +25,8 @@ package Synapse_Bard.Templates is
      Synapse.Core.Results
        (Template_Vectors.Vector, Ada.Strings.Unbounded.Unbounded_String);
 
-   --  The templates of the bible's `_templates/`, ordered by kind, or why there
-   --  is none.
+   --  The templates of the bible's `_templates/`, ordered by kind, or why
+   --  there is none.
    function Resolve (Repo_Root : String) return Resolved.Result;
 
    package Installed is new

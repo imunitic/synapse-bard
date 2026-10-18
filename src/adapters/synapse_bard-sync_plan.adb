@@ -8,6 +8,7 @@ with Synapse.Ports.Extractor;
 
 with Synapse_Bard.Cluster;
 with Synapse_Bard.Frontmatter_Extractor;
+with Synapse_Bard.Syntax;
 
 package body Synapse_Bard.Sync_Plan is
 
@@ -16,7 +17,7 @@ package body Synapse_Bard.Sync_Plan is
 
    package Text_Sorting is new Synapse.Core.Text_Lists.Vectors.Generic_Sorting;
 
-   LF : constant Character := Character'Val (10);
+   LF : constant Character := Synapse_Bard.Syntax.LF;
 
    ---------------------------------------------------------------------------
    --  Finding the clusters

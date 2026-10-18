@@ -1,4 +1,8 @@
 with Synapse.Core.Optional_Text;
+with Synapse.Core.Options;
+
+with Synapse_Bard.Manuscript;
+with Synapse_Bard.Syntax;
 
 --  What the subcommands share.
 
@@ -6,7 +10,8 @@ package Synapse_Bard.Commands.Support is
 
    subtype Maybe_Text is Synapse.Core.Optional_Text.Option;
 
-   LF : constant Character := Character'Val (10);
+   LF  : constant Character := Synapse_Bard.Syntax.LF;
+   TAB : constant Character := Synapse_Bard.Syntax.TAB;
 
    function Is_Help (Arg : String) return Boolean is
      (Arg = "-h" or else Arg = "--help");
@@ -15,6 +20,22 @@ package Synapse_Bard.Commands.Support is
    function Arg (Args : Arguments; N : Positive) return String;
 
    function Count (Args : Arguments) return Natural;
+
+   package Exit_Options is new Synapse.Core.Options (Exit_Code);
+
+   --  The common start of a command that takes exactly Wanted arguments, the
+   --  first being a help flag when it is the only one: the exit code to leave
+   --  with after printing Usage on standard error, or none when the arguments
+   --  are as expected.
+   function Check_Usage
+     (Env : Environment; Usage : String; Args : Arguments; Wanted : Natural)
+      return Exit_Options.Option;
+
+   --  The manuscript under Root, as Manuscript.Load reads it, saying on
+   --  standard error why not when it is refused.
+   function Load_Manuscript
+     (Env : Environment; Command, Root : String)
+      return Synapse_Bard.Manuscript.Loaded.Result;
 
    procedure Out_Text (Env : Environment; Text : String);
 

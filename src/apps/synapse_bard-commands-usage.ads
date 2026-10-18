@@ -1,10 +1,12 @@
+with Synapse_Bard.Syntax;
+
 --  The usage text of each command, as the command line prints it.
 --  What a command prints is the contract its callers depend on; the
 --  generated CLI reference is built from these texts.
 
 package Synapse_Bard.Commands.Usage is
 
-   LF : constant Character := Character'Val (10);
+   LF : constant Character := Synapse_Bard.Syntax.LF;
 
    Main_Usage : constant String :=
      "usage: synapse-bard <command>" & LF & "" & LF &
@@ -187,8 +189,8 @@ package Synapse_Bard.Commands.Usage is
      "{kind}_template.md). Exit 1 when it holds none." & LF & "" & LF &
      "  --install    copy the default template set the package ships" & LF &
      "               into _templates/ and print each copy. Refused when" & LF &
-     "               _templates/ already holds a template, so nothing is" & LF &
-     "               ever overwritten." & LF;
+     "               _templates/ already holds a template, so nothing" & LF &
+     "               is ever overwritten." & LF;
 
    Mode_Usage : constant String :=
      "usage: synapse-bard mode" & LF & "" & LF &

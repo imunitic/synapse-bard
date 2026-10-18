@@ -13,6 +13,9 @@ executables = ["synapse_bard_tests"]
 [[depends-on]]
 aunit = "^26.0.0"
 
+[[depends-on]]
+gnatprove = "^16.1.0"
+
 # Pins take effect only in the root crate's manifest, so this crate pins the
 # Synapse library itself; keep it on the same release tag as ../../alire.toml.
 [[depends-on]]

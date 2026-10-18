@@ -12,6 +12,7 @@ with Synapse_Bard.Frontmatter_Extractor;
 with Synapse_Bard.Frontmatter_Fields;
 with Synapse_Bard.Graph_Store;
 with Synapse_Bard.Templates;
+with Synapse.Core.Decimal_Image;
 
 package body Synapse_Bard.Commands.Verify is
 
@@ -272,8 +273,8 @@ package body Synapse_Bard.Commands.Verify is
       return Result;
    end Compute_Report;
 
-   function Image (Value : Natural) return String is
-     (Ada.Strings.Fixed.Trim (Natural'Image (Value), Ada.Strings.Left));
+   function Image (Value : Natural) return String
+   renames Synapse.Core.Decimal_Image.Image;
 
    function Run (Env : Environment; Args : Arguments) return Exit_Code is
    begin

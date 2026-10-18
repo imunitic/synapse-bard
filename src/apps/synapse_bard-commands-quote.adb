@@ -1,31 +1,22 @@
-with Ada.Strings.Unbounded;
-
 with Synapse_Bard.Commands.Support;
 with Synapse_Bard.Commands.Usage;
 with Synapse_Bard.Manuscript;
 
 package body Synapse_Bard.Commands.Quote is
 
-   use Ada.Strings.Unbounded;
    use Support;
 
+   package Books renames Synapse_Bard.Manuscript;
+
    function Run (Env : Environment; Args : Arguments) return Exit_Code is
+      Early : constant Exit_Options.Option :=
+        Check_Usage (Env, Usage.Quote_Usage, Args, 5);
    begin
-      if Args.Is_Empty then
-         Err_Text (Env, Usage.Quote_Usage);
-         return 2;
-      end if;
-      if Is_Help (Arg (Args, 1)) then
-         Err_Text (Env, Usage.Quote_Usage);
-         return 0;
-      end if;
-      if Count (Args) /= 5 then
-         Err_Text (Env, Usage.Quote_Usage);
-         return 2;
+      if Early.Found then
+         return Early.Value;
       end if;
       declare
          Number : constant String := Arg (Args, 4);
-         Line   : Natural := 0;
       begin
          if Number'Length = 0 or else Number'Length > 9
            or else (for some C of Number => C not in '0' .. '9')
@@ -36,28 +27,22 @@ package body Synapse_Bard.Commands.Quote is
                & LF & Usage.Quote_Usage);
             return 2;
          end if;
-         Line := Natural'Value (Number);
-         if Line = 0 then
+         if Natural'Value (Number) = 0 then
             Err_Text
               (Env,
                "synapse-bard quote: lines are numbered from 1" & LF);
             return 2;
          end if;
          declare
-            Loaded : constant Synapse_Bard.Manuscript.Loaded.Result :=
-              Synapse_Bard.Manuscript.Load (Resolve_Path (Env, Arg (Args, 1)));
+            Loaded : constant Books.Loaded.Result :=
+              Load_Manuscript (Env, "quote", Arg (Args, 1));
          begin
-            if not Synapse_Bard.Manuscript.Loaded.Is_Success (Loaded) then
-               Err_Text
-                 (Env,
-                  "synapse-bard quote: "
-                  & To_String (Synapse_Bard.Manuscript.Loaded.Error (Loaded))
-                  & LF);
+            if not Books.Loaded.Is_Success (Loaded) then
                return 1;
             end if;
-            if Synapse_Bard.Manuscript.Holds_Quote
-                 (Synapse_Bard.Manuscript.Loaded.Value (Loaded),
-                  Arg (Args, 2), Arg (Args, 3), Line, Arg (Args, 5))
+            if Books.Holds_Quote
+                 (Books.Loaded.Value (Loaded), Arg (Args, 2), Arg (Args, 3),
+                  Natural'Value (Number), Arg (Args, 5))
             then
                return 0;
             end if;

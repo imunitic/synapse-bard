@@ -1,9 +1,11 @@
+with Synapse_Bard.Syntax;
+
 --  The starter index `sync` seeds into an empty `_bard/vault/`: the text of
 --  `packages/synapse-bard/Index.md.template`, which a test keeps identical.
 
 package Synapse_Bard.Vault_Index_Template is
 
-   LF : constant Character := Character'Val (10);
+   LF : constant Character := Synapse_Bard.Syntax.LF;
 
    Text : constant String :=
      "---" & LF & "title: ""Index""" & LF & "---" & LF & LF & "# Index" &

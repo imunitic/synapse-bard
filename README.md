@@ -45,6 +45,7 @@ with it on first use.
 brew install alire just       # if not already installed
 just build                    # compile synapse-bard / synapse-bard-hook (validation profile)
 just test                     # the AUnit suite in tests/unit
+just prove                    # GNATprove over the SPARK units in src/core
 just acceptance               # run the built programs in scratch repositories
 just docs-check               # verify cli.md and rendered diagrams match their sources
 just fix                      # regenerate cli.md and diagrams after a change upstream of them

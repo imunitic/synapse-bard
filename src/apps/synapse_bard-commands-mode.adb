@@ -12,10 +12,11 @@ package body Synapse_Bard.Commands.Mode is
    use Support;
 
    function Run (Env : Environment; Args : Arguments) return Exit_Code is
+      Early : constant Exit_Options.Option :=
+        Check_Usage (Env, Usage.Mode_Usage, Args, 0);
    begin
-      if not Args.Is_Empty then
-         Err_Text (Env, Usage.Mode_Usage);
-         return (if Is_Help (Arg (Args, 1)) then 0 else 2);
+      if Early.Found then
+         return Early.Value;
       end if;
       declare
          Found : constant Roots.Roots_Options.Option :=
