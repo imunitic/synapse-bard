@@ -14,7 +14,7 @@ A required path to a folder holding an `index.md`: a numbered list of paths, one
 
 If the author gave no path, ask for it. There is no default location, and it may be inside the bible repository or anywhere else.
 
-If the author gave a shared link instead, download it into `$SYNAPSE_BARD_WORK_DIR` as a `.md` file, write a root `index.md` next to it listing that file as a one-item series, and use that folder as the root. Whatever the link resolves to must already be a conforming single-file book; do not convert or repair anything. Converting a Google Docs or Word manuscript into this layout is a separate job.
+The root must already follow this layout. This command reads a manuscript and never converts or repairs one: a manuscript in any other format is brought into this layout before book-to-bible runs, guided by the `synapse-bard-manuscript` skill, and `synapse-bard manuscript` says whether the result conforms.
 
 `$SYNAPSE_BARD_WORK_DIR` must be set, since everything below keeps its intermediate state there and never inside the bible repository. If it is unset, tell the author and stop.
 
