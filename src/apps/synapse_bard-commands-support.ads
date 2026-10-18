@@ -29,8 +29,7 @@ package Synapse_Bard.Commands.Support is
    function Resolve_Path (Env : Environment; Path : String) return String;
 
    --  The package's content root, where the files it ships live:
-   --  $CLAUDE_PLUGIN_ROOT, else $SYNAPSE_BARD_CONTENT_ROOT; none when neither
-   --  is set. The same order the hooks use.
+   --  $SYNAPSE_BARD_CONTENT_ROOT; none when it is not set.
    function Content_Root (Env : Environment) return Maybe_Text;
 
    --  $SYNAPSE_BARD_WORK_DIR, where the book-to-bible steps keep what they

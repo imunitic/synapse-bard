@@ -8,8 +8,8 @@
 // there is no `prompt-context`/`staleness` equivalent to wire up here.
 //
 // `synapse-bard-hook`'s own binary path isn't resolved here the usual way --
-// OpenCode plugins get no `${CLAUDE_PLUGIN_ROOT}`-equivalent "where am I
-// installed" value, unlike Claude Code/Codex, and an npm install's binary
+// OpenCode plugins get no "where am I
+// installed" value, and an npm install's binary
 // lives inside a per-platform optionalDependency package
 // (node_modules/@imunitic/synapse-bard-{platform}-{arch}/bin/), a path with
 // no fixed location this file could hardcode or compute at import time.

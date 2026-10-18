@@ -15,22 +15,15 @@ package body Synapse_Bard.Hooks.Session_Start is
 
    Blank_Line : constant String := [Character'Val (10), Character'Val (10)];
 
-   function Plugin_Root
-     (Vars : Synapse.Ports.Variables.Variables'Class) return Maybe_Text
-   is
-      Plugin  : constant Maybe_Text := Vars.Get ("CLAUDE_PLUGIN_ROOT");
-   begin
-      if Plugin.Found then
-         return Plugin;
-      end if;
-      return Vars.Get ("SYNAPSE_BARD_CONTENT_ROOT");
-   end Plugin_Root;
+   function Content_Root
+     (Vars : Synapse.Ports.Variables.Variables'Class) return Maybe_Text is
+     (Vars.Get ("SYNAPSE_BARD_CONTENT_ROOT"));
 
    function Under_Root
      (Vars : Synapse.Ports.Variables.Variables'Class; Name : String)
       return Maybe_Text
    is
-      Root : constant Maybe_Text := Plugin_Root (Vars);
+      Root : constant Maybe_Text := Content_Root (Vars);
    begin
       if not Root.Found then
          return Synapse.Core.Optional_Text.None;

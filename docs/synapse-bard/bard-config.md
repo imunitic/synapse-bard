@@ -28,16 +28,15 @@ chapter summaries of a [book-to-bible](book-to-bible.md) run. It is required by 
 when it is unset or empty, and it is a distinct variable from Synapse's own `SYNAPSE_WORK_DIR`, so both
 can be set at once. Nothing the pipeline produces is written inside the bible repository.
 
-## `CLAUDE_PLUGIN_ROOT` / `SYNAPSE_BARD_CONTENT_ROOT`: the environment variables that matter
+## `SYNAPSE_BARD_CONTENT_ROOT`: where the package is installed
 
-Both `synapse-bard-claude.md` (the standing instructions) and `Index.md.template` (the vault's
-bootstrap default) are read by `synapse-bard-hook`'s `SessionStart` handler through
-`CLAUDE_PLUGIN_ROOT` first, then `SYNAPSE_BARD_CONTENT_ROOT` — the npm-install counterpart
-`synapse-bard-setup configure claude` sets in `settings.json`'s own `env` block, since npm never
-sets `CLAUDE_PLUGIN_ROOT` the way a marketplace plugin install did. Both unset simply means neither
-file is found, reported plainly rather than guessed at. `synapse-bard templates --install` reads the
-same two variables, in the same order, to find the default template set the package ships under
-`templates/`, which it copies into the bible's `_templates/` when that holds none.
+`SYNAPSE_BARD_CONTENT_ROOT` is the folder the `synapse-bard` npm package is installed in. The
+`synapse-bard` and `synapse-bard-hook` launchers default it, and `synapse-bard-setup configure claude`
+also writes it into `settings.json`'s `env` block. `synapse-bard-hook`'s `SessionStart` handler reads
+`synapse-bard-claude.md` (the standing instructions) and `Index.md.template` (the vault's bootstrap
+default) from under it; unset simply means neither file is found, reported plainly rather than
+guessed at. `synapse-bard templates --install` reads it to find the default template set the package
+ships under `templates/`, which it copies into the bible's `_templates/` when that holds none.
 
 ## What a fresh bible repo needs, and what it doesn't
 

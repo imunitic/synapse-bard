@@ -33,13 +33,7 @@ package body Synapse_Bard.Commands.Support is
       else Ada.Strings.Unbounded.To_String (Env.Start) & "/" & Path);
 
    function Content_Root (Env : Environment) return Maybe_Text is
-      Plugin : constant Maybe_Text := Env.Vars.Get ("CLAUDE_PLUGIN_ROOT");
-   begin
-      if Plugin.Found then
-         return Plugin;
-      end if;
-      return Env.Vars.Get ("SYNAPSE_BARD_CONTENT_ROOT");
-   end Content_Root;
+     (Env.Vars.Get ("SYNAPSE_BARD_CONTENT_ROOT"));
 
    function Work_Dir (Env : Environment) return Maybe_Text is
       Value : constant Maybe_Text := Env.Vars.Get ("SYNAPSE_BARD_WORK_DIR");

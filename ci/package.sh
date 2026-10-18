@@ -72,7 +72,7 @@ echo "  shims ok"
 home="$work/home"
 mkdir -p "$home/.claude" "$home/.config"
 export HOME="$home"
-unset XDG_CONFIG_HOME CLAUDE_PLUGIN_ROOT SYNAPSE_BARD_CONTENT_ROOT
+unset XDG_CONFIG_HOME SYNAPSE_BARD_CONTENT_ROOT
 "$bin/synapse-bard-setup" configure claude >/dev/null || fail "synapse-bard-setup configure claude"
 settings="$home/.claude/settings.json"
 [ -f "$settings" ] || fail "no settings.json written"

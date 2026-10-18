@@ -30,13 +30,13 @@ package Acceptance.Fixtures is
       A4  : String := "") return Result;
 
    --  Runs the hook binary (the program under test with `-hook` appended) in
-   --  Dir with Stdin as its standard input, and `HOME`, `CLAUDE_PLUGIN_ROOT`
-   --  and `SYNAPSE_BARD_CONTENT_ROOT` set to the given values for the call; an
-   --  empty name of a variable leaves it unset. The environment of this
+   --  Dir with Stdin as its standard input, and `HOME` and
+   --  `SYNAPSE_BARD_CONTENT_ROOT` set to the given values for the call; an
+   --  empty value leaves it unset. The environment of this
    --  process is put back afterwards.
    function Run_Hook
      (Dir : String; Hook : String; Stdin : String; Home : String := "";
-      Plugin_Root : String := ""; Content_Root : String := "") return Result;
+      Content_Root : String := "") return Result;
 
    function Out_Text (R : Result) return String is
      (Ada.Strings.Unbounded.To_String (R.Output));
