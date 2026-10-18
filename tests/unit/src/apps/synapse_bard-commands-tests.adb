@@ -5,6 +5,7 @@ with AUnit.Assertions;
 
 with Scratch_Dirs;
 with Synapse.Adapters.Fake_Console;
+with Synapse.Adapters.Fake_Variables;
 with Synapse.Adapters.File_Bytes;
 with Synapse.Core.Text_Lists;
 
@@ -37,17 +38,27 @@ package body Synapse_Bard.Commands.Tests is
 
    function Run
      (Dir : String; A1 : String := ""; A2 : String := ""; A3 : String := "";
-      A4  : String := "") return Result
+      A4  : String := ""; A5 : String := ""; A6 : String := "";
+      Work : String := ""; Content : String := "") return Result
    is
       Console : aliased Synapse.Adapters.Fake_Console.Fake;
+      Vars    : aliased Synapse.Adapters.Fake_Variables.Fake_Variables;
       Env     : constant Environment :=
-        (Console => Console'Access, Start => To_Unbounded_String (Dir));
-      Words   : constant array (1 .. 4) of Unbounded_String :=
+        (Console => Console'Access, Vars => Vars'Access,
+         Start   => To_Unbounded_String (Dir));
+      Words   : constant array (1 .. 6) of Unbounded_String :=
         [To_Unbounded_String (A1), To_Unbounded_String (A2),
-         To_Unbounded_String (A3), To_Unbounded_String (A4)];
+         To_Unbounded_String (A3), To_Unbounded_String (A4),
+         To_Unbounded_String (A5), To_Unbounded_String (A6)];
       Args    : Arguments;
       Code    : Exit_Code;
    begin
+      if Work /= "" then
+         Vars.Set ("SYNAPSE_BARD_WORK_DIR", Work);
+      end if;
+      if Content /= "" then
+         Vars.Set ("SYNAPSE_BARD_CONTENT_ROOT", Content);
+      end if;
       for A of Words loop
          if A /= "" then
             Args.Append (A);
@@ -389,7 +400,9 @@ package body Synapse_Bard.Commands.Tests is
    --  A repository with the entities given, synced into a graph store.
    procedure Report_Of
      (Label : String; Notes : Synapse.Core.Text_Lists.Vector;
-      Report : out Verify.Report; Dir : out Unbounded_String)
+      Report : out Verify.Report; Dir : out Unbounded_String;
+      Allowed : Synapse.Core.Text_Lists.Vector :=
+        Synapse.Core.Text_Lists.Vectors.Empty_Vector)
    is
       Root  : constant String := Scratch_Dirs.Make (Label);
       Store : Synapse_Bard.Graph_Store.Graph_Store :=
@@ -405,7 +418,7 @@ package body Synapse_Bard.Commands.Tests is
       begin
          Assert (R.Code = 0, "fixture sync");
       end;
-      Report := Verify.Compute_Report (Root, Store);
+      Report := Verify.Compute_Report (Root, Allowed, Store);
       Dir := To_Unbounded_String (Root);
    end Report_Of;
 
@@ -481,21 +494,65 @@ package body Synapse_Bard.Commands.Tests is
      (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
       pragma Unreferenced (T);
-      R   : Verify.Report;
-      Dir : Unbounded_String;
+      R       : Verify.Report;
+      Dir     : Unbounded_String;
+      Allowed : Synapse.Core.Text_Lists.Vector;
+      Notes   : constant Synapse.Core.Text_Lists.Vector :=
+        Notes_Of
+          ("parts/a.md",
+           L ("---") & L ("name: A") & L ("template: part")
+           & L ("kinds: [""friend"", ""bogus""]") & L ("---") & LF
+           & L ("Prose."));
    begin
-      Report_Of
-        ("cmd-verify-kinds",
-         Notes_Of
-           ("parts/a.md",
-            L ("---") & L ("name: A") & L ("template: part")
-            & L ("kinds: [""bogus""]") & L ("---") & LF & L ("Prose.")),
-         R, Dir);
+      Report_Of ("cmd-verify-nokinds", Notes, R, Dir);
+      Assert (R.Kind_Misses.Is_Empty, "with no allowed values: not checked");
+      Scratch_Dirs.Remove (To_String (Dir));
+      Allowed.Append (To_Unbounded_String ("friend"));
+      Report_Of ("cmd-verify-kinds", Notes, R, Dir, Allowed);
       Assert (Natural (R.Kind_Misses.Length) = 1, "one unknown value");
       Assert (To_String (R.Kind_Misses (1).Target) = "bogus", "the value");
       Assert (To_String (R.Kind_Misses (1).Field) = "kinds", "the label");
       Scratch_Dirs.Remove (To_String (Dir));
    end Verify_Unknown_Kinds_Value;
+
+   procedure Verify_Allowed_Kinds_Come_From_The_Template_Set
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      Dir : constant String := Scratch_Dirs.Make ("cmd-verify-allowed");
+
+      function Joined (Items : Synapse.Core.Text_Lists.Vector) return String is
+         Result : Unbounded_String;
+      begin
+         for Item of Items loop
+            Append (Result, To_String (Item) & ",");
+         end loop;
+         return To_String (Result);
+      end Joined;
+   begin
+      Assert (Verify.Allowed_Kinds (Dir).Is_Empty, "no set at all");
+      Put_File (Dir, "_templates/part_template.md", L ("---") & L ("---"));
+      Assert (Verify.Allowed_Kinds (Dir).Is_Empty, "no kinds template");
+      Put_File
+        (Dir, "_templates/kinds_template.md",
+         L ("---") & L ("kinds:") & L ("  - ""rival""") & L ("  - mentor")
+         & L ("---"));
+      Assert
+        (Joined (Verify.Allowed_Kinds (Dir)) = "rival,mentor,",
+         "the bible's kinds template, block list");
+      Put_File
+        (Dir, "_templates/kinds_template.md",
+         L ("---") & L ("kinds: [friend, ""ally""]") & L ("---"));
+      Assert
+        (Joined (Verify.Allowed_Kinds (Dir)) = "friend,ally,", "flow list");
+      Put_File
+        (Dir, "_templates/kinds_template.md", L ("---") & L ("kinds:")
+         & L ("---"));
+      Assert
+        (Verify.Allowed_Kinds (Dir).Is_Empty,
+         "a kinds template listing nothing allows nothing to check");
+      Scratch_Dirs.Remove (Dir);
+   end Verify_Allowed_Kinds_Come_From_The_Template_Set;
 
    procedure Verify_Finds_Nothing_In_A_Resolving_Fixture
      (T : in out AUnit.Test_Cases.Test_Case'Class)
@@ -550,6 +607,15 @@ package body Synapse_Bard.Commands.Tests is
       pragma Unreferenced (T);
       Dir : constant String := Make_Synced ("cmd-verify");
    begin
+      Expect
+        (Run (Dir, "verify"), 0,
+         L ("broken frontmatter links: 0") & L ("broken prose links: 0")
+         & L ("kinds values: not checked (no kinds template)") & LF
+         & L ("mention counts:") & L ("gadget-two: 1"),
+         "", "no kinds template: values are not checked");
+      Put_File
+        (Dir, "_templates/kinds_template.md",
+         L ("---") & L ("kinds: [""friend"", ""ally""]") & L ("---"));
       Expect
         (Run (Dir, "verify"), 0,
          L ("broken frontmatter links: 0") & L ("broken prose links: 0")
@@ -723,6 +789,223 @@ package body Synapse_Bard.Commands.Tests is
    --  Registration
    ---------------------------------------------------------------------------
 
+   ---------------------------------------------------------------------------
+   --  Book to bible
+   ---------------------------------------------------------------------------
+
+   TAB : constant String := [Character'Val (9)];
+
+   --  A manuscript root holding one folder book of two chapters.
+   function Make_Manuscript (Label : String) return String is
+      Dir : constant String := Scratch_Dirs.Make (Label);
+   begin
+      Put_File (Dir, "index.md", L ("1. the_long_road/"));
+      Put_File
+        (Dir, "the_long_road/index.md",
+         L ("1. Departure.md") & L ("2. Arrival.md"));
+      Put_File
+        (Dir, "the_long_road/Departure.md",
+         L ("Aidan left at dawn.") & L ("Nobody saw him go."));
+      Put_File
+        (Dir, "the_long_road/Arrival.md", L ("Aidan reached Ashfall."));
+      return Dir;
+   end Make_Manuscript;
+
+   procedure Manuscript_Command
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      Dir      : constant String := Make_Manuscript ("cmd-manuscript");
+      --  The folder as the command resolves ".", with symbolic links followed.
+      Resolved : constant String := Ada.Directories.Full_Name (Dir & "/.");
+   begin
+      Expect (Run (Dir, "manuscript"), 2, "", Usage.Manuscript_Usage,
+              "no root");
+      Expect (Run (Dir, "manuscript", "--help"), 0, "",
+              Usage.Manuscript_Usage, "--help");
+      Expect
+        (Run (Dir, "manuscript", "."), 0,
+         "The long road" & TAB & "Departure" & TAB & Resolved
+         & "/the_long_road/Departure.md" & TAB & "1" & TAB & "2" & LF
+         & "The long road" & TAB & "Arrival" & TAB & Resolved
+         & "/the_long_road/Arrival.md" & TAB & "1" & TAB & "1" & LF, "",
+         "a relative root is under the start directory");
+      Put_File (Dir, "index.md", L ("1. missing/"));
+      declare
+         R : constant Result := Run (Dir, "manuscript", Dir);
+      begin
+         Assert (R.Code = 1, "a missing book is refused");
+         Assert (Has (R.Err_Text, "'missing' does not exist"), "the reason");
+      end;
+      Scratch_Dirs.Remove (Dir);
+   end Manuscript_Command;
+
+   procedure Ground_Command
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      Dir  : constant String := Make_Manuscript ("cmd-ground");
+      Work : constant String := Dir & "/work";
+   begin
+      Put_File
+        (Dir, "roster.tsv",
+         L ("Aidan Dayne" & TAB & "character" & TAB & "Aidan")
+         & L ("Ashfall" & TAB & "place"));
+      Expect (Run (Dir, "ground"), 2, "", Usage.Ground_Usage, "no arguments");
+      declare
+         R : constant Result := Run (Dir, "ground", Dir, Dir & "/roster.tsv");
+      begin
+         Assert (R.Code = 1, "no work directory is refused");
+         Assert (Has (R.Err_Text, "SYNAPSE_BARD_WORK_DIR is not set"),
+                 "says why");
+      end;
+      declare
+         R : constant Result :=
+           Run (Dir, "ground", Dir, "roster.tsv", Work => Work);
+      begin
+         Assert (R.Code = 0, "ground succeeds: " & To_String (R.Err_Text));
+         Assert
+           (To_String (R.Out_Text) =
+              "Wrote " & Work & "/_refs.tsv (3 references)" & LF,
+            "reports the file: " & To_String (R.Out_Text));
+      end;
+      declare
+         Index : constant Support.Maybe_Text :=
+           Support.Read_Source (Work & "/_refs.tsv");
+      begin
+         Assert (Index.Found, "the index file exists");
+         Assert
+           (Has (Index.Value, "Aidan" & TAB & "Aidan Dayne" & TAB
+                 & "The long road" & TAB & "Departure"),
+            "an alias row, entity first column two");
+         Assert
+           (Has (Index.Value, "Ashfall" & TAB & "Ashfall" & TAB
+                 & "The long road" & TAB & "Arrival"),
+            "a name row");
+      end;
+      Put_File (Dir, "roster.tsv", "Lonely" & LF);
+      declare
+         R : constant Result :=
+           Run (Dir, "ground", Dir, "roster.tsv", Work => Work);
+      begin
+         Assert (R.Code = 1, "a bad roster is refused");
+         Assert (Has (R.Err_Text, "roster line 1"), "names the line");
+      end;
+      Scratch_Dirs.Remove (Dir);
+   end Ground_Command;
+
+   procedure Quote_Command
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      Dir : constant String := Make_Manuscript ("cmd-quote");
+   begin
+      Expect (Run (Dir, "quote"), 2, "", Usage.Quote_Usage, "no arguments");
+      Expect
+        (Run (Dir, "quote", ".", "The long road", "Departure", "2",
+              "Nobody saw him"), 0, "", "", "a quote on its line");
+      declare
+         R : constant Result :=
+           Run (Dir, "quote", ".", "The long road", "Departure", "1",
+                "Nobody saw him");
+      begin
+         Assert (R.Code = 1, "a quote on another line");
+         Assert (Has (R.Err_Text, "not found on line 1"), "says so");
+      end;
+      Assert
+        (Run (Dir, "quote", ".", "The long road", "Departure", "two",
+              "x").Code = 2, "a line that is not a number");
+      Assert
+        (Run (Dir, "quote", ".", "The long road", "Departure", "0",
+              "x").Code = 2, "line numbers start at 1");
+      Scratch_Dirs.Remove (Dir);
+   end Quote_Command;
+
+   procedure Templates_Command
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      Dir     : constant String := Make_Repo ("cmd-templates");
+      Content : constant String := Scratch_Dirs.Make ("cmd-templates-content");
+   begin
+      Put_File (Content, "templates/widget_template.md", L ("---") & L ("w"));
+      Put_File (Content, "templates/gadget_template.md", L ("---") & L ("g"));
+      Expect (Run (Dir, "templates", "extra"), 2, "", Usage.Templates_Usage,
+              "an unknown argument");
+      Expect
+        (Run (Dir, "templates", Content => Content), 0,
+         "blank" & TAB & Dir & "/_templates/blank_template.md" & LF
+         & "part" & TAB & Dir & "/_templates/part_template.md" & LF,
+         "", "the bible's own templates, by kind");
+      declare
+         R : constant Result :=
+           Run (Dir, "templates", "--install", Content => Content);
+      begin
+         Assert (R.Code = 1, "nothing is installed over existing templates");
+         Assert (Has (R.Err_Text, "already holds templates"), "says why");
+      end;
+      Ada.Directories.Delete_Tree (Dir & "/_templates");
+      Put_File (Dir, "_templates/notes.md", L ("not a template"));
+      declare
+         R : constant Result := Run (Dir, "templates", Content => Content);
+      begin
+         Assert (R.Code = 1, "a bible with no template has no set");
+         Assert (Has (R.Err_Text, "no template set"), "says why");
+      end;
+      Expect
+        (Run (Dir, "templates", "--install", Content => Content), 0,
+         "installed " & Dir & "/_templates/gadget_template.md" & LF
+         & "installed " & Dir & "/_templates/widget_template.md" & LF,
+         "", "the default set is copied in");
+      declare
+         Copy : constant Support.Maybe_Text :=
+           Support.Read_Source (Dir & "/_templates/gadget_template.md");
+      begin
+         Assert
+           (Copy.Found and then To_String (Copy.Value) = L ("---") & L ("g"),
+            "a copy has the shipped content");
+      end;
+      Assert
+        (Support.Read_Source (Dir & "/_templates/notes.md").Found,
+         "an unrelated file is untouched");
+      Assert
+        (Run (Dir, "templates", "--install", Content => Content).Code = 1,
+         "a second install is refused");
+      Ada.Directories.Delete_Tree (Dir & "/_templates");
+      declare
+         R : constant Result := Run (Dir, "templates", "--install");
+      begin
+         Assert (R.Code = 1, "no shipped set, nothing to install");
+         Assert (Has (R.Err_Text, "ships no default template set"), "says why");
+      end;
+      Scratch_Dirs.Remove (Dir);
+      Scratch_Dirs.Remove (Content);
+   end Templates_Command;
+
+   procedure Mode_Command
+     (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      Full  : constant String := Make_Repo ("cmd-mode-report");
+      Empty : constant String := Scratch_Dirs.Make ("cmd-mode-generate");
+   begin
+      Expect (Run (Full, "mode"), 0, L ("report"), "",
+              "a bible with entity files");
+      Expect (Run (Full, "mode", "extra"), 2, "", Usage.Mode_Usage,
+              "an argument");
+      Ada.Directories.Create_Path (Empty & "/.git");
+      Put_File (Empty, "_templates/part_template.md", L ("---") & L ("---"));
+      Expect (Run (Empty, "mode"), 0, L ("generate"), "",
+              "templates are not entity files");
+      Put_File
+        (Empty, "people/aidan.md",
+         L ("---") & L ("template: part") & L ("name: Aidan") & L ("---"));
+      Expect (Run (Empty, "mode"), 0, L ("report"), "",
+              "one entity file is enough");
+      Scratch_Dirs.Remove (Full);
+      Scratch_Dirs.Remove (Empty);
+   end Mode_Command;
+
    overriding
    function Name (T : Test_Case) return AUnit.Message_String is
       pragma Unreferenced (T);
@@ -755,6 +1038,9 @@ package body Synapse_Bard.Commands.Tests is
         (T, Verify_Unknown_Kinds_Value'Access,
          "verify reports an unknown kinds value");
       Register_Routine
+        (T, Verify_Allowed_Kinds_Come_From_The_Template_Set'Access,
+         "verify takes its allowed kinds from the bible's kinds template");
+      Register_Routine
         (T, Verify_Finds_Nothing_In_A_Resolving_Fixture'Access,
          "verify finds nothing in a fully resolving fixture");
       Register_Routine
@@ -762,6 +1048,11 @@ package body Synapse_Bard.Commands.Tests is
          "verify's mention tally counts distinct entities, not occurrences");
       Register_Routine (T, Verify_Command'Access, "verify");
       Register_Routine (T, Sync_Command'Access, "sync");
+      Register_Routine (T, Manuscript_Command'Access, "manuscript");
+      Register_Routine (T, Ground_Command'Access, "ground");
+      Register_Routine (T, Quote_Command'Access, "quote");
+      Register_Routine (T, Templates_Command'Access, "templates");
+      Register_Routine (T, Mode_Command'Access, "mode");
       Register_Routine
         (T, Starter_Index_Equals_The_Shipped_Template'Access,
          "the starter index is the shipped template");

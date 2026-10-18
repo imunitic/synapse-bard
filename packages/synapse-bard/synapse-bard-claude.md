@@ -8,7 +8,7 @@ the vault normally already exists by the time any session starts. A `SessionStar
 it reflexively, but do treat its injected contents as live information, not background flavor. In the
 rare case the hook reports no `Index.md` yet (a repo synced before this existed, or `_bard/graph/`
 created some other way), seed it yourself from the shipped default
-(`${CLAUDE_PLUGIN_ROOT}/Index.md.template`) before creating or linking any note in this session —
+(`$SYNAPSE_BARD_CONTENT_ROOT/Index.md.template`) before creating or linking any note in this session —
 bringing bard online in a repo is already the author's explicit signal the vault should exist, so
 this needs no separate confirmation.
 

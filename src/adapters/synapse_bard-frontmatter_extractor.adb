@@ -7,6 +7,7 @@ with Synapse.Adapters.File_Bytes;
 with Synapse.Core.Graph_Model;
 
 with Synapse_Bard.Frontmatter_Fields;
+with Synapse_Bard.Syntax;
 
 package body Synapse_Bard.Frontmatter_Extractor is
 
@@ -25,8 +26,8 @@ package body Synapse_Bard.Frontmatter_Extractor is
    Identity_Field : constant String := "name";
    Kind_Field     : constant String := "template";
 
-   LF : constant Character := Character'Val (10);
-   CR : constant Character := Character'Val (13);
+   LF : constant Character := Synapse_Bard.Syntax.LF;
+   CR : constant Character := Synapse_Bard.Syntax.CR;
    HT : constant Character := Character'Val (9);
 
    function Name (Reason : Refusal) return String is

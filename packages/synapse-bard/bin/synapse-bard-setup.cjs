@@ -207,10 +207,9 @@ function configureClaude() {
   const rendered = renderHooksTemplate(path.join(PKG_ROOT, "harness", "claude", "hooks.json"), hookBin);
   settings.hooks = mergeHooksInto(settings.hooks, rendered);
 
-  // The npm-install counterpart to $CLAUDE_PLUGIN_ROOT -- bard_hook's own
-  // the hook's session-start handler checks this env var now that there's no plugin
-  // marketplace to set CLAUDE_PLUGIN_ROOT for it. Points at PKG_ROOT --
-  // synapse-bard-claude.md and Index.md.template sit directly under it.
+  // Where the package is installed: the hook's session-start handler and
+  // `synapse-bard templates --install` read it. synapse-bard-claude.md,
+  // Index.md.template and templates/ sit directly under PKG_ROOT.
   settings.env = settings.env || {};
   settings.env.SYNAPSE_BARD_CONTENT_ROOT = PKG_ROOT;
 
@@ -282,8 +281,8 @@ function configureOpencode() {
   const pluginDest = path.join(pluginDestDir, "synapse-bard.js");
   fs.mkdirSync(pluginDestDir, { recursive: true });
   // synapse-bard.js as shipped is a template -- it has no way to compute its
-  // own binary's install path at import time (no CLAUDE_PLUGIN_ROOT-equivalent
-  // for OpenCode plugins), so this bakes the real resolved path in as a
+  // own binary's install path at import time (OpenCode plugins get no
+  // "where am I installed" value), so this bakes the real resolved path in as a
   // literal, the same absolute path resolveHookBin() already gave the
   // Claude/Codex hooks.json rendering above.
   const pluginSource = fs

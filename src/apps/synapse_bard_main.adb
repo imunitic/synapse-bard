@@ -3,6 +3,7 @@ with Ada.Directories;
 with Ada.Strings.Unbounded;
 
 with Synapse.Adapters.System_Console;
+with Synapse.Adapters.System_Variables;
 with Synapse.Core.Text_Lists;
 
 with Synapse_Bard.Commands.Dispatch;
@@ -11,8 +12,9 @@ with Synapse_Bard.Commands.Dispatch;
 
 procedure Synapse_Bard_Main is
    Console : aliased Synapse.Adapters.System_Console.System_Console;
+   Vars    : aliased Synapse.Adapters.System_Variables.System_Variables;
    Env     : constant Synapse_Bard.Commands.Environment :=
-     (Console => Console'Access,
+     (Console => Console'Access, Vars => Vars'Access,
       Start   =>
         Ada.Strings.Unbounded.To_Unbounded_String
           (Ada.Directories.Current_Directory));

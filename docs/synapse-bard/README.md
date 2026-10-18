@@ -13,6 +13,9 @@ parses YAML frontmatter only.
 - **[bard-vault.md](bard-vault.md)** — **Writer's notes vault**: the free-form half. Why it's
   repo-local from day one, the one `SessionStart` hook, `vault-search`/`vault-links`'s
   wikilink-accurate resolution, and how the design→task workflow was adapted for fiction.
+- **[book-to-bible.md](book-to-bible.md)** — **Book to bible**: drafting a bible from a series
+  manuscript, or reporting how a manuscript differs from an existing bible; the manuscript
+  layout, the two modes and the grounding pipeline.
 - **[cli.md](cli.md)** — reference for every subcommand of `synapse-bard` and every hook of
   `synapse-bard-hook`: usage, arguments and exit codes. **Generated** from what the binaries print
   for `--help`, never hand-written.

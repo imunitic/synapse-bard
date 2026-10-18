@@ -98,6 +98,7 @@ cp -r "$here/synapse-bard/diagrams/"*.png "$out/synapse-bard/diagrams/" 2>/dev/n
 synapse_bard_pages="$here/synapse-bard/README.md|index.html|Home
 $here/synapse-bard/bard-graph.md|bard-graph.html|Bible-graph
 $here/synapse-bard/bard-vault.md|bard-vault.html|Writer's notes vault
+$here/synapse-bard/book-to-bible.md|book-to-bible.html|Book to bible
 $here/synapse-bard/cli.md|cli.html|CLI Reference
 $here/synapse-bard/bard-config.md|bard-config.html|Configuration Reference
 |diagrams/|Diagrams"

@@ -22,6 +22,10 @@ build:
 test:
     cd tests/unit && alr -n build {{profile}} && ./bin/synapse_bard_tests
 
+# Prove the SPARK units (src/core) with GNATprove; exits non-zero on any unproved check.
+prove:
+    cd tests/unit && alr -n exec -- gnatprove -P synapse_bard_proof.gpr --no-subprojects --level=2 --report=all --checks-as-errors=on
+
 # Run the built program in scratch repositories and check what it writes.
 acceptance: build
     cd tests/acceptance && alr -n build {{profile}} && ./bin/synapse_bard_acceptance "$(cd ../.. && pwd)/bin/synapse-bard"
@@ -53,7 +57,7 @@ linux-release:
     ci/linux-release.sh
 
 # The full gate -- run before pushing.
-check: build test acceptance docs-check package
+check: build test prove acceptance docs-check package
     @echo "all green"
 
 # Show what changed against the pushed branch.

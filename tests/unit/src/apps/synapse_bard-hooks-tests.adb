@@ -183,27 +183,8 @@ package body Synapse_Bard.Hooks.Tests is
    begin
       Assert
         (not Session_Start.Template_Path (No_Vars).Found,
-         "neither variable set");
+         "variable unset");
    end Template_Path_Is_Nothing_Without_A_Root;
-
-   procedure Template_Path_Joins_The_Plugin_Root
-     (T : in out AUnit.Test_Cases.Test_Case'Class)
-   is
-      pragma Unreferenced (T);
-      V   : Fakes.Fake_Variables.Fake_Variables;
-   begin
-      Only (V, "CLAUDE_PLUGIN_ROOT", "/plugins/synapse-bard");
-      declare
-         Got : constant Session_Start.Maybe_Text :=
-           Session_Start.Template_Path (V);
-      begin
-      Assert
-        (Got.Found
-         and then To_String (Got.Value) =
-           "/plugins/synapse-bard/Index.md.template",
-         "CLAUDE_PLUGIN_ROOT");
-      end;
-   end Template_Path_Joins_The_Plugin_Root;
 
    procedure Template_Path_Joins_The_Content_Root
      (T : in out AUnit.Test_Cases.Test_Case'Class)
@@ -220,7 +201,7 @@ package body Synapse_Bard.Hooks.Tests is
         (Got.Found
          and then To_String (Got.Value) =
            "/npm/synapse-bard/Index.md.template",
-         "SYNAPSE_BARD_CONTENT_ROOT when the plugin root is unset");
+         "SYNAPSE_BARD_CONTENT_ROOT");
       end;
    end Template_Path_Joins_The_Content_Root;
 
@@ -231,27 +212,8 @@ package body Synapse_Bard.Hooks.Tests is
    begin
       Assert
         (not Session_Start.Claude_Md_Path (No_Vars).Found,
-         "neither variable set");
+         "variable unset");
    end Claude_Md_Path_Is_Nothing_Without_A_Root;
-
-   procedure Claude_Md_Path_Joins_The_Plugin_Root
-     (T : in out AUnit.Test_Cases.Test_Case'Class)
-   is
-      pragma Unreferenced (T);
-      V   : Fakes.Fake_Variables.Fake_Variables;
-   begin
-      Only (V, "CLAUDE_PLUGIN_ROOT", "/plugins/synapse-bard");
-      declare
-         Got : constant Session_Start.Maybe_Text :=
-           Session_Start.Claude_Md_Path (V);
-      begin
-      Assert
-        (Got.Found
-         and then To_String (Got.Value) =
-           "/plugins/synapse-bard/synapse-bard-claude.md",
-         "CLAUDE_PLUGIN_ROOT");
-      end;
-   end Claude_Md_Path_Joins_The_Plugin_Root;
 
    procedure Claude_Md_Path_Joins_The_Content_Root
      (T : in out AUnit.Test_Cases.Test_Case'Class)
@@ -268,7 +230,7 @@ package body Synapse_Bard.Hooks.Tests is
         (Got.Found
          and then To_String (Got.Value) =
            "/npm/synapse-bard/synapse-bard-claude.md",
-         "SYNAPSE_BARD_CONTENT_ROOT when the plugin root is unset");
+         "SYNAPSE_BARD_CONTENT_ROOT");
       end;
    end Claude_Md_Path_Joins_The_Content_Root;
 
@@ -322,7 +284,7 @@ package body Synapse_Bard.Hooks.Tests is
       Root : constant String := Scratch_Dirs.Make ("hook-ss-plugin");
       Vars : Fakes.Fake_Variables.Fake_Variables;
    begin
-      Only (Vars, "CLAUDE_PLUGIN_ROOT", Root);
+      Only (Vars, "SYNAPSE_BARD_CONTENT_ROOT", Root);
       Put_File (Dir, "_bard/vault/Index.md", L ("# Index") & L ("- notes"));
       Put_File (Root, "synapse-bard-claude.md", L ("Standing instructions."));
       declare
@@ -421,7 +383,7 @@ package body Synapse_Bard.Hooks.Tests is
          V : Fakes.Fake_Variables.Fake_Variables;
          R : Result;
       begin
-         Only (V, "CLAUDE_PLUGIN_ROOT", "/nonexistent");
+         Only (V, "SYNAPSE_BARD_CONTENT_ROOT", "/nonexistent");
          R := Run (Dir, "session-start", Payload_For (Dir), V);
          Assert
            (Contains (To_String (R.Out_Text), "Writer's notes vault index ("),
@@ -631,19 +593,13 @@ package body Synapse_Bard.Hooks.Tests is
          "usage, help and an unknown hook");
       Register_Routine
         (T, Template_Path_Is_Nothing_Without_A_Root'Access,
-         "Template_Path is nothing with neither root variable");
-      Register_Routine
-        (T, Template_Path_Joins_The_Plugin_Root'Access,
-         "Template_Path joins CLAUDE_PLUGIN_ROOT");
+         "Template_Path is nothing without the root variable");
       Register_Routine
         (T, Template_Path_Joins_The_Content_Root'Access,
          "Template_Path joins SYNAPSE_BARD_CONTENT_ROOT");
       Register_Routine
         (T, Claude_Md_Path_Is_Nothing_Without_A_Root'Access,
-         "Claude_Md_Path is nothing with neither root variable");
-      Register_Routine
-        (T, Claude_Md_Path_Joins_The_Plugin_Root'Access,
-         "Claude_Md_Path joins CLAUDE_PLUGIN_ROOT");
+         "Claude_Md_Path is nothing without the root variable");
       Register_Routine
         (T, Claude_Md_Path_Joins_The_Content_Root'Access,
          "Claude_Md_Path joins SYNAPSE_BARD_CONTENT_ROOT");

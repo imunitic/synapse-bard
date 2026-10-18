@@ -140,12 +140,11 @@ package body Acceptance.Fixtures is
 
    function Run_Hook
      (Dir : String; Hook : String; Stdin : String; Home : String := "";
-      Plugin_Root : String := ""; Content_Root : String := "") return Result
+      Content_Root : String := "") return Result
    is
       Runner : Synapse.Adapters.System_Process.System_Runner;
       Args   : Synapse.Core.Text_Lists.Vector;
       G_Home : Variable_Guard := Guard ("HOME", Home);
-      G_Plug : Variable_Guard := Guard ("CLAUDE_PLUGIN_ROOT", Plugin_Root);
       G_Cont : Variable_Guard :=
         Guard ("SYNAPSE_BARD_CONTENT_ROOT", Content_Root);
    begin

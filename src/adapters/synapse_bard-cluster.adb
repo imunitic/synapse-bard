@@ -1,12 +1,13 @@
 with Ada.Strings.Fixed;
 
 with Synapse_Bard.Frontmatter_Fields;
+with Synapse_Bard.Syntax;
 
 package body Synapse_Bard.Cluster is
 
    use Ada.Strings.Unbounded;
 
-   LF : constant Character := Character'Val (10);
+   LF : constant Character := Synapse_Bard.Syntax.LF;
 
    --  U+2014 EM DASH in UTF-8.
    Em_Dash : constant String :=

@@ -3,13 +3,14 @@ with Ada.IO_Exceptions;
 with Ada.Strings.Fixed;
 with Synapse.Core.Node_Path;
 with Synapse.Core.Text_Search;
+with Synapse_Bard.Syntax;
 
 package body Synapse_Bard.Graph_Store is
 
    use Ada.Strings.Unbounded;
 
-   LF : constant Character := Character'Val (10);
-   CR : constant Character := Character'Val (13);
+   LF : constant Character := Synapse_Bard.Syntax.LF;
+   CR : constant Character := Synapse_Bard.Syntax.CR;
    HT : constant Character := Character'Val (9);
 
    function Create (Root : String) return Graph_Store is

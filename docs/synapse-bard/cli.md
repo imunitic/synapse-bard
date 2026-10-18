@@ -31,6 +31,17 @@ usage: synapse-bard <command>
                                 <note>
   verify                        check frontmatter/prose-body links and
                                 kinds: values against the graph
+  manuscript <root>             check a series manuscript and list its
+                                books and chapters
+  ground <root> <roster>        find where the manuscript names each
+                                roster entity, into $SYNAPSE_BARD_WORK_DIR
+  quote <root> <book> <chapter> <line> <text>
+                                check a quote sits on a cited line
+  templates [--install]         the entity kinds and their template
+                                files; --install copies in the default
+                                set when there is none
+  mode                          generate or report, by whether the
+                                bible has entity files
 ```
 
 ### synapse-bard sync
@@ -127,9 +138,85 @@ usage: synapse-bard vault-links <note>
 usage: synapse-bard verify
 
 Checks every entity's frontmatter refs and prose-body [[wikilinks]]
-resolve to a real entity, and every kinds: value matches the settled
-vocabulary. Read-only -- reports findings, fixes nothing. Exit 1 if
-any check found something.
+resolve to a real entity, and every kinds: value is one the
+template set's kinds template (kinds_template.md, its kinds: field)
+enumerates; without a kinds template the values are not checked.
+Read-only -- reports findings, fixes nothing. Exit 1 if any check
+found something.
+```
+
+### synapse-bard manuscript
+
+```
+usage: synapse-bard manuscript <root>
+
+  <root>  a folder holding an index.md: a numbered list
+          of paths, one per book, in series order. A book
+          is a folder with its own index.md listing its
+          chapter files, or a single .md file with one H1
+          (the title) and one H2 per chapter.
+
+Checks the manuscript and prints one tab-separated line
+per chapter: book, chapter, file, first line, last line.
+A folder or file name written as a slug (_ or - and no
+space) is shown as a title: they become spaces and the
+first letter is capitalized; any other name is shown as
+written. Exit 1 with the reason when the manuscript does
+not conform.
+```
+
+### synapse-bard ground
+
+```
+usage: synapse-bard ground <root> <roster>
+
+  <root>    a manuscript folder, as for `manuscript`
+  <roster>  a file with one entity per line, tab-separated:
+            name, kind, then any number of aliases
+
+Writes $SYNAPSE_BARD_WORK_DIR/_refs.tsv, one tab-separated
+line per whole-word mention of a name or alias: term,
+entity, book, chapter, file, line, SHA-256 of the line.
+Sorted by term, then entity, then position. Pronouns and
+other mentions without a name form are not found. Exit 1
+when the variable is unset or an input is refused.
+```
+
+### synapse-bard quote
+
+```
+usage: synapse-bard quote <root> <book> <chapter> <line> <text>
+
+Checks that <text> sits within line <line> of chapter
+<chapter> of book <book>, the line being inside that
+chapter. Names are the titles `manuscript` prints. Exit 0
+when it does, 1 when it does not.
+```
+
+### synapse-bard templates
+
+```
+usage: synapse-bard templates
+       synapse-bard templates --install
+
+Prints one tab-separated line per template of the bible's
+_templates/: its kind and the path of its file (a
+{kind}_template.md). Exit 1 when it holds none.
+
+  --install    copy the default template set the package ships
+               into _templates/ and print each copy. Refused when
+               _templates/ already holds a template, so nothing
+               is ever overwritten.
+```
+
+### synapse-bard mode
+
+```
+usage: synapse-bard mode
+
+Prints `generate` when the bible has no entity files yet and
+`report` when it has any: the two modes of book-to-bible.
+An entity file is one `sync` would ingest.
 ```
 
 ## synapse-bard-hook

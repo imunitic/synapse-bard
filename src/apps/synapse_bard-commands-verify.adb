@@ -1,9 +1,7 @@
 with Ada.Containers.Indefinite_Ordered_Maps;
 with Ada.Strings.Fixed;
-with Ada.Strings.Unbounded;
 
 with Synapse.Core.Graph_Model;
-with Synapse.Core.Text_Lists;
 with Synapse.Ports.Extractor;
 
 with Synapse_Bard.Cluster;
@@ -13,6 +11,8 @@ with Synapse_Bard.Commands.Usage;
 with Synapse_Bard.Frontmatter_Extractor;
 with Synapse_Bard.Frontmatter_Fields;
 with Synapse_Bard.Graph_Store;
+with Synapse_Bard.Templates;
+with Synapse.Core.Decimal_Image;
 
 package body Synapse_Bard.Commands.Verify is
 
@@ -20,14 +20,6 @@ package body Synapse_Bard.Commands.Verify is
    use Support;
    use type Synapse.Core.Graph_Model.Role;
    use type Synapse.Ports.Extractor.Outcome_Kind;
-
-   --  The values `kinds:` entries are checked against, settled in the design.
-   Settled_Kinds : constant array (1 .. 10) of access constant String :=
-     [new String'("romantic_interest"), new String'("friend"),
-      new String'("teammate"), new String'("chain_of_command"),
-      new String'("ally"), new String'("adversary"),
-      new String'("acquaintance"), new String'("family"),
-      new String'("mentor"), new String'("other")];
 
    function Total_Findings (R : Report) return Natural is
      (Natural (R.Frontmatter_Misses.Length) + Natural (R.Prose_Misses.Length)
@@ -42,9 +34,6 @@ package body Synapse_Bard.Commands.Verify is
         and then Value (Value'Last) = Value (Value'First)
       then Value (Value'First + 1 .. Value'Last - 1)
       else Value);
-
-   function Is_Settled (Value : String) return Boolean is
-     (for some K of Settled_Kinds => K.all = Value);
 
    --  The values of a `kinds:` field as `Raw_Field` returns it: a flow list on
    --  the key's own line, or a block list on the lines below it. Not a general
@@ -134,9 +123,40 @@ package body Synapse_Bard.Commands.Verify is
 
    package Tally_Sorting is new Tally_Vectors.Generic_Sorting (Tally_Before);
 
+   function Allowed_Kinds
+     (Repo_Root : String) return Synapse.Core.Text_Lists.Vector
+   is
+      Set : constant Synapse_Bard.Templates.Resolved.Result :=
+        Synapse_Bard.Templates.Resolve (Repo_Root);
+   begin
+      if Synapse_Bard.Templates.Resolved.Is_Success (Set) then
+         for T of Synapse_Bard.Templates.Resolved.Value (Set) loop
+            if To_String (T.Kind) = "kinds" then
+               declare
+                  Text : constant Maybe_Text :=
+                    Read_Source (To_String (T.Path));
+               begin
+                  if Text.Found then
+                     declare
+                        Raw : constant Frontmatter_Fields.Maybe_Text :=
+                          Frontmatter_Fields.Raw_Field
+                            (To_String (Text.Value), "kinds");
+                     begin
+                        if Raw.Found then
+                           return Kinds_Values (To_String (Raw.Value));
+                        end if;
+                     end;
+                  end if;
+               end;
+            end if;
+         end loop;
+      end if;
+      return Synapse.Core.Text_Lists.Vectors.Empty_Vector;
+   end Allowed_Kinds;
+
    function Compute_Report
-     (Repo_Root : String; Store : in out Synapse.Ports.Store.Store'Class)
-      return Report
+     (Repo_Root : String; Allowed : Synapse.Core.Text_Lists.Vector;
+      Store : in out Synapse.Ports.Store.Store'Class) return Report
    is
       Entries   : constant Cluster.Source_Entry_Vectors.Vector :=
         Cluster.All_Entities (Store);
@@ -219,15 +239,15 @@ package body Synapse_Bard.Commands.Verify is
                            end;
                         end if;
 
-                        --  Check 3: `kinds:` values are settled ones.
+                        --  Check 3: `kinds:` values are allowed ones.
                         declare
                            Raw : constant Frontmatter_Fields.Maybe_Text :=
                              Frontmatter_Fields.Raw_Field (Text, "kinds");
                         begin
-                           if Raw.Found then
+                           if Raw.Found and then not Allowed.Is_Empty then
                               for Value of Kinds_Values (To_String (Raw.Value))
                               loop
-                                 if not Is_Settled (To_String (Value)) then
+                                 if not Allowed.Contains (Value) then
                                     Result.Kind_Misses.Append
                                       (Miss'(File   => File,
                                              Field  =>
@@ -253,8 +273,8 @@ package body Synapse_Bard.Commands.Verify is
       return Result;
    end Compute_Report;
 
-   function Image (Value : Natural) return String is
-     (Ada.Strings.Fixed.Trim (Natural'Image (Value), Ada.Strings.Left));
+   function Image (Value : Natural) return String
+   renames Synapse.Core.Decimal_Image.Image;
 
    function Run (Env : Environment; Args : Arguments) return Exit_Code is
    begin
@@ -279,8 +299,10 @@ package body Synapse_Bard.Commands.Verify is
          declare
             Store  : Synapse_Bard.Graph_Store.Graph_Store :=
               Synapse_Bard.Graph_Store.Create (To_String (Found.Value.Graph));
+            Allowed : constant Synapse.Core.Text_Lists.Vector :=
+              Allowed_Kinds (To_String (Found.Value.Repo));
             R      : constant Report :=
-              Compute_Report (To_String (Found.Value.Repo), Store);
+              Compute_Report (To_String (Found.Value.Repo), Allowed, Store);
             Output : Unbounded_String;
 
             procedure List (Misses : Miss_Vectors.Vector) is
@@ -299,8 +321,11 @@ package body Synapse_Bard.Commands.Verify is
                & Image (Natural (R.Frontmatter_Misses.Length)) & LF
                & "broken prose links: "
                & Image (Natural (R.Prose_Misses.Length)) & LF
-               & "unknown kinds values: "
-               & Image (Natural (R.Kind_Misses.Length)) & LF);
+               & (if Allowed.Is_Empty
+                  then "kinds values: not checked (no kinds template)"
+                  else "unknown kinds values: "
+                       & Image (Natural (R.Kind_Misses.Length)))
+               & LF);
             List (R.Frontmatter_Misses);
             List (R.Prose_Misses);
             List (R.Kind_Misses);
